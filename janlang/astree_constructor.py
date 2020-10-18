@@ -1,14 +1,29 @@
-from recognition.actions import astree
-from recognition import lark_parser
+import astree
+import lark_parser
 import lark.tree
 import types
 import json
 import operator
 
+
 def parse_node(lark_ir):
     node_type = lark_parser.lark_node_type(lark_ir)
     value_ast = parse_map[node_type](lark_ir)
     return value_ast
+
+def parse_module(lark_ir):
+    statements = lark_ir.children
+    body = [parse_node(stmt) for stmt in statements]
+    module = astree.Module(body)
+    return module
+
+def parse_if_statement(lark_ir):
+    condition, then = lark_ir.children
+    return astree.IfStatement(parse_node(condition), parse_node(then))
+
+def parse_assignment(lark_ir):
+    left, right = lark_ir.children
+    return astree.Assignment(parse_node(left), parse_node(right))
 
 def parse_expression_sequence(lark_ir):
     expressions = []
@@ -141,6 +156,9 @@ def parse_slice(lark_ir):
     return astree.Slice(slice_of, start, stop, step)
 
 parse_map = {
+    'module': parse_module,
+    'assignment': parse_assignment,
+    'if_statement': parse_if_statement,
     'literal': lambda x: astree.Literal(''.join(str(s) for s in x.children)),
     'STRING_DOUBLE': lambda x: astree.String(str(x)[1:-1].replace('\\\\', '\\')),
     'STRING_SINGLE': lambda x: astree.String(str(x)[1:-1].replace('\\\\', '\\')),

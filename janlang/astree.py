@@ -1,7 +1,3 @@
-import lark.lexer
-from recognition.actions.library import stdlib
-from recognition import lark_parser
-import lark.tree
 import types
 import re
 import json
@@ -24,7 +20,7 @@ def exhaust_generator(gen):
 
 class BaseActionNode:
     
-    def evaluate(self, context):
+    def execute(self, context):
         print(type(self))
         raise NotImplementedError
 
@@ -46,12 +42,21 @@ class BaseActionNode:
             evaluated_nodes.append(node)
         context.argument_frames.pop()
 
+class Module(BaseActionNode):
+
+    def __init__(self, body):
+        self.body = body
+
+    def execute(self, context):
+        for item in self.body:
+            item.execute(context)
+
 class ExpressionSequence(BaseActionNode):
 
     def __init__(self, expressions):
         self.expressions = expressions
 
-    def evaluate(self, context):
+    def execute(self, context):
         evaluated_nodes = []
         last = None
         for i, expr in enumerate(self.expressions):
@@ -75,7 +80,7 @@ class Literal(BaseActionNode):
     def __init__(self, value: str):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.value
 
 class ArgumentReference(BaseActionNode):
@@ -83,7 +88,7 @@ class ArgumentReference(BaseActionNode):
     def __init__(self, value: str):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return context.argument_frames[-1][self.value]
 
 class Whitespace(BaseActionNode):
@@ -91,7 +96,7 @@ class Whitespace(BaseActionNode):
     def __init__(self, value: str):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.value
 
 class ExprSequenceSeparator(BaseActionNode):
@@ -99,7 +104,7 @@ class ExprSequenceSeparator(BaseActionNode):
     def __init__(self, value: str):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return None
 
 class String(BaseActionNode):
@@ -107,7 +112,7 @@ class String(BaseActionNode):
     def __init__(self, value: str):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.value
 
 class Integer(BaseActionNode):
@@ -115,15 +120,27 @@ class Integer(BaseActionNode):
     def __init__(self, value: int):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.value
+
+class IfStatement:
+
+    def __init__(self, condition, then):
+        self.condition = condition
+        self.then = then
+
+    def execute(self, context):
+        test_result = self.condition.execute(context)
+        if test_result:
+            self.then.execute(context)
+        raise NotImplementedError
 
 class Float(BaseActionNode):
 
     def __init__(self, value: float):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.value
 
 
@@ -133,7 +150,7 @@ class UnaryOp(BaseActionNode):
         self.operation = operation
         self.operand = operand
 
-    def evaluate(self, context):
+    def execute(self, context):
         if self.operation == 'positive':
             return +(self.operand.evaluate(context))
         if self.operation == 'negative':
@@ -148,7 +165,7 @@ class Add(BaseActionNode):
         self.left = left
         self.right = right
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.left.evaluate(context) + self.right.evaluate(context)
 
 class Subtract(BaseActionNode):
@@ -157,7 +174,7 @@ class Subtract(BaseActionNode):
         self.left = left
         self.right = right
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.left.evaluate(context) - self.right.evaluate(context)
         
 class Multiply(BaseActionNode):
@@ -166,7 +183,7 @@ class Multiply(BaseActionNode):
         self.left = left
         self.right = right
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.left.evaluate(context) * self.right.evaluate(context)
 
 class Divide(BaseActionNode):
@@ -175,7 +192,7 @@ class Divide(BaseActionNode):
         self.left = left
         self.right = right
 
-    def evaluate(self, context):
+    def execute(self, context):
         self.left.evaluate(context) / self.right.evaluate(context)
 
 class Exponent(BaseActionNode):
@@ -184,7 +201,7 @@ class Exponent(BaseActionNode):
         self.left = left
         self.right = right
 
-    def evaluate(self, context):
+    def execute(self, context):
         right = self.right.evaluate(context)
         return self.left.evaluate(context) ** right
 
@@ -194,7 +211,7 @@ class Or(BaseActionNode):
         self.left = left
         self.right = right
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.left.evaluate(context) or self.right.evaluate(context)
 
 class And(BaseActionNode):
@@ -203,7 +220,7 @@ class And(BaseActionNode):
         self.left = left
         self.right = right
 
-    def evaluate(self, context):
+    def execute(self, context):
         return self.left.evaluate(context) and self.right.evaluate(context)
 
 class Compare(BaseActionNode):
@@ -213,7 +230,7 @@ class Compare(BaseActionNode):
         self.ops = ops
         self.comparators = comparators
 
-    def evaluate(self, context):
+    def execute(self, context):
         operator_map = {'!=': operator.ne, '==': operator.eq, '<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
         curr = self.left.evaluate(context)
         for op, node in zip(self.ops, self.comparators):
@@ -229,7 +246,7 @@ class List(BaseActionNode):
     def __init__(self, items):
         self.items = items
 
-    def evaluate(self, context):
+    def execute(self, context):
         return [x.evaluate(context) for x in self.items]
 
 class Attribute(BaseActionNode):
@@ -238,7 +255,7 @@ class Attribute(BaseActionNode):
         self.attribute_of = attribute_of
         self.name = name
 
-    def evaluate(self, context):
+    def execute(self, context):
         attribute_of_value = self.attribute_of.evaluate(context)
         return getattr(attribute_of_value, self.name)
 
@@ -248,7 +265,7 @@ class Index(BaseActionNode):
         self.index_of = index_of
         self.index = index
 
-    def evaluate(self, context):
+    def execute(self, context):
         index_of_value = self.index_of.evaluate(context)
         index = self.index.evaluate(context)
         return index_of_value[index]
@@ -261,7 +278,7 @@ class Slice(BaseActionNode):
         self.stop = stop
         self.step = step
 
-    def evaluate(self, context):
+    def execute(self, context):
         slice_of_value = self.slice_of.evaluate(context)
         start = None if self.start is None else self.start.evaluate(context)
         stop = None if self.stop is None else self.stop.evaluate(context)
@@ -292,7 +309,7 @@ class Call(BaseActionNode):
             frame[param['name']] = arg_value
         context.argument_frames.append(frame)
 
-    def evaluate(self, context):
+    def execute(self, context):
         arg_values, kwarg_values, function_to_call = self.prepare_call(context)
         if isinstance(function_to_call, FunctionDefinition):
             self.add_argument_frame(context, function_to_call, arg_values)
@@ -325,13 +342,24 @@ class Call(BaseActionNode):
             else:
                 yield self, result
 
+class Assignment(BaseActionNode):
+
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def execute(self, context):
+        name_string = self.left.value
+        value = self.right.execute(context)
+        context.assign(name_string, value)
+
 class Name(BaseActionNode):
 
     def __init__(self, value):
         self.value = value
 
-    def evaluate(self, context):
-        return context.namespace[self.value]
+    def execute(self, context):
+        return context.lookup(self.value)
 
 class FunctionDefinition:
 
@@ -345,7 +373,7 @@ class Variable(BaseActionNode):
     def __init__(self, value):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         index = self.value - 1 if self.value > 0 else self.value
         try:
             action = context.variables[index]
@@ -366,5 +394,5 @@ class RegularExpression(BaseActionNode):
     def __init__(self, value):
         self.value = value
 
-    def evaluate(self, context):
+    def execute(self, context):
         return re.compile(self.value, flags=re.IGNORECASE)

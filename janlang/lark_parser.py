@@ -23,17 +23,45 @@ UNARY_OPERATOR = 'UNARY_OPERATOR'
 ARGUMENT_REFERENCE = 'argument_reference'
 SLICE = 'slice'
 
-grammar = r"""
-    ?start: _NL* tree
+grammar = """
+    COMPARE_OPERATOR: ("==" | "!=" | "<=" | ">=" | "<"  | ">")
+    ADDITIVE_OPERATOR: ("+" | "-")
+    MULTIPLICATIVE_OPERATOR: ("*" | "/" | "//" | "%")
+    UNARY_OPERATOR: ("+" | "-")
+    NOT_OPERATOR: "not"
 
-    tree: NAME _NL [_INDENT tree+ _DEDENT]
+    module: _NL* _statements
+    _statements: _statement+
+    _statement: if_statement | assignment | _simple_statement
+    if_statement: "if" NAME ":" _block
+    assignment: NAME "=" expr _NL
+    _simple_statement: expr _NL
+    _block: _NL _INDENT _statements _DEDENT
+    expr: _atom_entry
+    _atom_entry: compare
+    ?compare: or (COMPARE_OPERATOR or)*
+    ?or: and ("||" and)*
+    ?and: not ("&&" not)*
+    ?not: [NOT_OPERATOR] additive
+    ?additive: multiplicative (ADDITIVE_OPERATOR multiplicative)*
+    ?multiplicative: unary (MULTIPLICATIVE_OPERATOR unary)*
+    ?unary: [UNARY_OPERATOR] exponent
+    ?exponent: _atom ("**" _atom)*
+    _atom: (STRING_SINGLE | STRING_DOUBLE | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT | NAME)
+    ZERO_OR_POSITIVE_INTEGER: /[0-9]+/
+    ZERO_OR_POSITIVE_FLOAT: /([0-9]*[.])+[0-9]+/
+    _STRING_INNER: /.*?/
+    _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/ 
+    STRING_SINGLE: "'" _STRING_ESC_INNER "'"
+    STRING_DOUBLE: "\\"" _STRING_ESC_INNER "\\""
+
 
     %import common.CNAME -> NAME
     %import common.WS_INLINE
     %declare _INDENT _DEDENT
     %ignore WS_INLINE
 
-    _NL: /(\r?\n[\t ]*)+/
+    _NL: /(\\r?\\n[\\t ]*)+/
 """
 
 osspeak_grammar = f'''start: ([_block] _NEWLINE)* [_block]
