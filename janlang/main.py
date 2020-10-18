@@ -16,12 +16,15 @@ parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIn
 
 test_tree = \
 """
-a = "b"
+var a = "b"
+var f = "eff"
 if a:
     if f:
         a
 if a:
+    var b = "bee"
     b
+    
 """
 
 def test():

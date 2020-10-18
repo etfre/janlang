@@ -12,8 +12,7 @@ def parse_node(lark_ir):
     return value_ast
 
 def parse_module(lark_ir):
-    statements = lark_ir.children
-    body = [parse_node(stmt) for stmt in statements]
+    body = parse_node(lark_ir.children[0])
     module = astree.Module(body)
     return module
 
@@ -159,6 +158,7 @@ parse_map = {
     'module': parse_module,
     'assignment': parse_assignment,
     'if_statement': parse_if_statement,
+    'statements': lambda x: [parse_node(c) for c in x.children],
     'literal': lambda x: astree.Literal(''.join(str(s) for s in x.children)),
     'STRING_DOUBLE': lambda x: astree.String(str(x)[1:-1].replace('\\\\', '\\')),
     'STRING_SINGLE': lambda x: astree.String(str(x)[1:-1].replace('\\\\', '\\')),

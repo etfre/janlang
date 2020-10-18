@@ -30,13 +30,13 @@ grammar = """
     UNARY_OPERATOR: ("+" | "-")
     NOT_OPERATOR: "not"
 
-    module: _NL* _statements
-    _statements: _statement+
+    module: _NL* statements
+    statements: _statement+
     _statement: if_statement | assignment | _simple_statement
     if_statement: "if" NAME ":" _block
-    assignment: NAME "=" expr _NL
+    assignment: "var" NAME "=" expr _NL
     _simple_statement: expr _NL
-    _block: _NL _INDENT _statements _DEDENT
+    _block: _NL _INDENT statements _DEDENT
     expr: _atom_entry
     _atom_entry: compare
     ?compare: or (COMPARE_OPERATOR or)*

@@ -48,6 +48,7 @@ class Module(BaseActionNode):
         self.body = body
 
     def execute(self, context):
+        print(self.body)
         for item in self.body:
             item.execute(context)
 
@@ -133,7 +134,6 @@ class IfStatement:
         test_result = self.condition.execute(context)
         if test_result:
             self.then.execute(context)
-        raise NotImplementedError
 
 class Float(BaseActionNode):
 
