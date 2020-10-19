@@ -30,6 +30,11 @@ grammar = """
     UNARY_OPERATOR: ("+" | "-")
     NOT_OPERATOR: "not"
 
+    _WS: /[ \t]/
+    WS: /[ \t]/
+    NO_WS_AHEAD: /(?![ \t])/
+    NO_WS_BEHIND: /(?<![ \t])/
+
     module: _NL* statements
     statements: _statement+
     _statement: if_statement | assignment | _simple_statement
@@ -47,9 +52,32 @@ grammar = """
     ?multiplicative: unary (MULTIPLICATIVE_OPERATOR unary)*
     ?unary: [UNARY_OPERATOR] exponent
     ?exponent: _atom ("**" _atom)*
-    _atom: (STRING_SINGLE | STRING_DOUBLE | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT | NAME)
-    ZERO_OR_POSITIVE_INTEGER: /[0-9]+/
+    _aatom: (STRING_SINGLE | STRING_DOUBLE | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT | NAME)
+    _atom: (index | slice | _grouping | attribute | literal | list | STRING_SINGLE | STRING_DOUBLE | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT | call | NAME)
+    _chainable: (NAME | attribute | call | list | index | slice | STRING_SINGLE | STRING_DOUBLE | _grouping | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT)
+    _VAR_PREC: "$" NO_WS_AHEAD
+    _ATTR_SEPARATOR: NO_WS_BEHIND "." NO_WS_AHEAD
+    _SUBSCRIPT_PREFIX: NO_WS_BEHIND "["
+    SLICE_SEPARATOR: ":"
+    _CALL_START: NO_WS_BEHIND "("
     ZERO_OR_POSITIVE_FLOAT: /([0-9]*[.])+[0-9]+/
+    ZERO_OR_POSITIVE_INTEGER: /[0-9]+/
+    INTEGER: /-?[0-9]+/
+    LITERAL_PIECE: /[a-zA-Z0-9_]+/ 
+    literal.-100: LITERAL_PIECE (WS+ LITERAL_PIECE)*
+
+    _grouping: "(" expr ")"
+    list: "[" [expr ("," expr)*] "]"
+    index: _chainable _SUBSCRIPT_PREFIX expr "]"
+    slice: _chainable _SUBSCRIPT_PREFIX [expr] SLICE_SEPARATOR [expr] [SLICE_SEPARATOR [expr]] "]"
+    attribute: _chainable  _ATTR_SEPARATOR NAME
+    call: _chainable _CALL_START ((arg_list ["," kwarg_list]) | [kwarg_list]) ")"
+    arg_list: expr ("," expr)*
+    kwarg_list: kwarg ("," kwarg)* 
+    kwarg: NAME "=" expr
+
+    function_definition: NAME "(" [positional_parameters] ")" "=>" expr
+    positional_parameters: NAME ("," NAME)*
     _STRING_INNER: /.*?/
     _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/ 
     STRING_SINGLE: "'" _STRING_ESC_INNER "'"

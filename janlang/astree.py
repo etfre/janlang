@@ -2,6 +2,8 @@ import types
 import re
 import json
 import operator
+import execution_context
+import function
 
 def evaluate_generator(gen):
     assert isinstance(gen, types.GeneratorType)
@@ -133,7 +135,8 @@ class IfStatement:
     def execute(self, context):
         test_result = self.condition.execute(context)
         if test_result:
-            self.then.execute(context)
+            for stmt in self.then:
+                stmt.execute(context)
 
 class Float(BaseActionNode):
 
@@ -256,7 +259,7 @@ class Attribute(BaseActionNode):
         self.name = name
 
     def execute(self, context):
-        attribute_of_value = self.attribute_of.evaluate(context)
+        attribute_of_value = self.attribute_of.execute(context)
         return getattr(attribute_of_value, self.name)
 
 class Index(BaseActionNode):
@@ -266,8 +269,8 @@ class Index(BaseActionNode):
         self.index = index
 
     def execute(self, context):
-        index_of_value = self.index_of.evaluate(context)
-        index = self.index.evaluate(context)
+        index_of_value = self.index_of.execute(context)
+        index = self.index.execute(context)
         return index_of_value[index]
 
 class Slice(BaseActionNode):
@@ -279,10 +282,10 @@ class Slice(BaseActionNode):
         self.step = step
 
     def execute(self, context):
-        slice_of_value = self.slice_of.evaluate(context)
-        start = None if self.start is None else self.start.evaluate(context)
-        stop = None if self.stop is None else self.stop.evaluate(context)
-        step = None if self.step is None else self.step.evaluate(context)
+        slice_of_value = self.slice_of.execute(context)
+        start = None if self.start is None else self.start.execute(context)
+        stop = None if self.stop is None else self.stop.execute(context)
+        step = None if self.step is None else self.step.execute(context)
         return slice_of_value[start:stop:step]
 
 class Call(BaseActionNode):
@@ -293,13 +296,9 @@ class Call(BaseActionNode):
         self.kwargs = kwargs
 
     def prepare_call(self, context):
-        function_to_call = self.fn.evaluate(context)
-        if function_to_call in stdlib.deferred_arguments_eval:
-            arg_values = [context] + self.args
-            kwarg_values = self.kwargs.copy()
-        else:
-            arg_values = [arg.evaluate(context) for arg in self.args]
-            kwarg_values = {k: v.evaluate(context) for k, v in self.kwargs.items()}
+        function_to_call = self.fn.execute(context)
+        arg_values = [arg.execute(context) for arg in self.args]
+        kwarg_values = {k: v.execute(context) for k, v in self.kwargs.items()}
         return arg_values, kwarg_values, function_to_call
 
     def add_argument_frame(self, context, function_to_call, arg_values):
@@ -309,13 +308,15 @@ class Call(BaseActionNode):
             frame[param['name']] = arg_value
         context.argument_frames.append(frame)
 
-    def execute(self, context):
-        arg_values, kwarg_values, function_to_call = self.prepare_call(context)
-        if isinstance(function_to_call, FunctionDefinition):
-            self.add_argument_frame(context, function_to_call, arg_values)
-            result = function_to_call.action.evaluate(context)
-            context.argument_frames.pop()
-            return result
+    def execute(self, context: execution_context.ExecutionContext):
+        function_to_call = self.fn.execute(context)
+        if not isinstance(function_to_call, function.Function):
+            raise RuntimeError(f'Trying to call a function, but got {function_to_call}')
+        return function_to_call.call(context, self.args, self.kwargs)
+            # self.add_argument_frame(context, function_to_call, arg_values)
+            # result = function_to_call.action.evaluate(context)
+            # context.argument_frames.pop()
+            # return result
         try:
             result = function_to_call(*arg_values, **kwarg_values)
         except Exception as e:
@@ -361,7 +362,7 @@ class Name(BaseActionNode):
     def execute(self, context):
         return context.lookup(self.value)
 
-class FunctionDefinition:
+class FunctionDefinition(BaseActionNode):
 
     def __init__(self, name: str, parameters, action):
         self.name = name

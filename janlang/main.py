@@ -23,7 +23,7 @@ if a:
         a
 if a:
     var b = "bee"
-    b
+    print(b)
     
 """
 

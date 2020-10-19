@@ -1,6 +1,6 @@
-def print(a):
+def _print(context, a):
     print(a)
 
 FUNCTIONS = {
-    'print': print
+    'print': _print
 }
