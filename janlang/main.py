@@ -12,18 +12,12 @@ class TreeIndenter(Indenter):
     DEDENT_type = '_DEDENT'
     tab_len = 4
 
-parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIndenter())
+parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIndenter(), propagate_positions=True, maybe_placeholders=True)
 
 test_tree = \
 """
-var a = "b"
-var f = "eff"
-if a:
-    if f:
-        a
-if a:
-    var b = "bee"
-    print(b)
+def fib(a, b, c="def"):
+    "c"
     
 """
 
@@ -31,7 +25,6 @@ def test():
     lark_tree = parser.parse(test_tree)
     print(lark_tree.pretty())
     root = astree_constructor.parse_node(lark_tree)
-    print(root)
     interpreter.Interpreter().execute(root)
 
 if __name__ == '__main__':

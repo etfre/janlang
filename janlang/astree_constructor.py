@@ -20,6 +20,32 @@ def parse_if_statement(lark_ir):
     condition, then = lark_ir.children
     return astree.IfStatement(parse_node(condition), parse_node(then))
 
+def parse_function_definition(lark_ir):
+    name = str(lark_ir.children[0])
+    name, positional_params, default_params, statements = lark_ir.children
+    print(name)
+    print(positional_params)
+    print(default_params)
+    print(statements)
+    action_ir = lark_ir.children[-1]
+    positional_parameters = lark_parser.find_type(lark_ir, 'positional_parameters')
+    params = []
+    for param_ir in positional_params.children:
+        params.append(astree.Parameter(str(param_ir)))
+        # params.append({'name': str(param_ir)})
+    default = []
+    for default_param_ir in default_params.children:
+        name, value = default_param_ir.children
+        print('abc')
+        print(name)
+        print(value)
+        params.append(astree.Parameter(str(name)))
+        default.append(parse_node(value))
+    body = parse_node(statements)
+    print(body)
+    return astree.FunctionDefinition(name, params, default, body)
+    raise NotImplementedError
+
 def parse_assignment(lark_ir):
     left, right = lark_ir.children
     return astree.Assignment(parse_node(left), parse_node(right))
@@ -158,6 +184,7 @@ parse_map = {
     'module': parse_module,
     'assignment': parse_assignment,
     'if_statement': parse_if_statement,
+    'function_definition': parse_function_definition,
     'statements': lambda x: [parse_node(c) for c in x.children],
     'literal': lambda x: astree.Literal(''.join(str(s) for s in x.children)),
     'STRING_DOUBLE': lambda x: astree.String(str(x)[1:-1].replace('\\\\', '\\')),
@@ -195,17 +222,6 @@ def action_root_from_text(text):
 
 def action_from_lark_ir(root_lark_ir, text):
     return parse_node(root_lark_ir)
-
-def function_definition_from_lark_ir(lark_ir):
-    name = str(lark_ir.children[0])
-    action_ir = lark_ir.children[-1]
-    positional_parameters = lark_parser.find_type(lark_ir, 'positional_parameters')
-    params = []
-    if positional_parameters:
-        for param_ir in positional_parameters.children:
-            params.append({'name': str(param_ir)})
-    action = action_from_lark_ir(action_ir, '')
-    return astree.FunctionDefinition(name, params, action)
 
 def to_json_string(action):
     return json.dumps(action, cls=SimpleJsonEncoder, sort_keys=True, indent=4)

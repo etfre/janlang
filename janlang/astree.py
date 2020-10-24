@@ -288,6 +288,10 @@ class Slice(BaseActionNode):
         step = None if self.step is None else self.step.execute(context)
         return slice_of_value[start:stop:step]
 
+class Parameter(BaseActionNode):
+
+    def __init__(self, name):   
+        self.name = name
 class Call(BaseActionNode):
 
     def __init__(self, fn, args, kwargs):
@@ -364,10 +368,11 @@ class Name(BaseActionNode):
 
 class FunctionDefinition(BaseActionNode):
 
-    def __init__(self, name: str, parameters, action):
+    def __init__(self, name: str, parameters, default_values, body):
         self.name = name
         self.parameters = parameters
-        self.action = action
+        self.default_values = default_values
+        self.body = body
     
 class Variable(BaseActionNode):
 
@@ -397,3 +402,6 @@ class RegularExpression(BaseActionNode):
 
     def execute(self, context):
         return re.compile(self.value, flags=re.IGNORECASE)
+
+class Nil:
+    pass

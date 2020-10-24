@@ -34,10 +34,12 @@ grammar = """
     WS: /[ \t]/
     NO_WS_AHEAD: /(?![ \t])/
     NO_WS_BEHIND: /(?<![ \t])/
+    NO_EQUALS_AHEAD: /(?![ \t]*=)./
+    ARG_NAME: /[a-zA-Z0-9_]+(?![ \t]*=)/ 
 
     module: _NL* statements
     statements: _statement+
-    _statement: if_statement | assignment | _simple_statement
+    _statement: if_statement | assignment | _simple_statement | function_definition
     if_statement: "if" NAME ":" _block
     assignment: "var" NAME "=" expr _NL
     _simple_statement: expr _NL
@@ -55,7 +57,6 @@ grammar = """
     _aatom: (STRING_SINGLE | STRING_DOUBLE | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT | NAME)
     _atom: (index | slice | _grouping | attribute | literal | list | STRING_SINGLE | STRING_DOUBLE | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT | call | NAME)
     _chainable: (NAME | attribute | call | list | index | slice | STRING_SINGLE | STRING_DOUBLE | _grouping | ZERO_OR_POSITIVE_INTEGER | ZERO_OR_POSITIVE_FLOAT)
-    _VAR_PREC: "$" NO_WS_AHEAD
     _ATTR_SEPARATOR: NO_WS_BEHIND "." NO_WS_AHEAD
     _SUBSCRIPT_PREFIX: NO_WS_BEHIND "["
     SLICE_SEPARATOR: ":"
@@ -76,17 +77,19 @@ grammar = """
     kwarg_list: kwarg ("," kwarg)* 
     kwarg: NAME "=" expr
 
-    function_definition: NAME "(" [positional_parameters] ")" "=>" expr
-    positional_parameters: NAME ("," NAME)*
+    function_definition: "def" NAME "(" [positional_parameters] [[","] default_parameters] ")" ":" _block
+    positional_parameters: ARG_NAME ("," ARG_NAME)*
+    default_parameters: default_parameter ("," default_parameter)*
+    default_parameter: NAME "=" expr
     _STRING_INNER: /.*?/
     _STRING_ESC_INNER: _STRING_INNER /(?<!\\\\)(\\\\\\\\)*?/ 
     STRING_SINGLE: "'" _STRING_ESC_INNER "'"
     STRING_DOUBLE: "\\"" _STRING_ESC_INNER "\\""
 
 
+    %declare _INDENT _DEDENT
     %import common.CNAME -> NAME
     %import common.WS_INLINE
-    %declare _INDENT _DEDENT
     %ignore WS_INLINE
 
     _NL: /(\\r?\\n[\\t ]*)+/
