@@ -3,6 +3,7 @@ from lark.indenter import Indenter
 import interpreter
 import lark_parser
 import astree_constructor
+import lexer
 
 class TreeIndenter(Indenter):
     NL_type = '_NL'
@@ -16,12 +17,17 @@ parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIn
 
 test_tree = \
 """
+abcdef
+    hij
+lmn
 def fib(a, b, c="def"):
     "c"
     
 """
 
 def test():
+    for token in lexer.RuleLexer(test_tree):
+        print(token)
     lark_tree = parser.parse(test_tree)
     print(lark_tree.pretty())
     root = astree_constructor.parse_node(lark_tree)
