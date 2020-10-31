@@ -20,6 +20,7 @@ class Parser:
         }
         self.binary_tokens_to_ast_nodes = {
             **self.comparison_tokens,
+            tokens.Star: ast.Multiply,
             tokens.Plus: ast.Add,
             tokens.Minus: ast.Subtract,
         }
@@ -43,8 +44,9 @@ class Parser:
 
 
     def parse_statement(self):
-        while isinstance(self.peek(), tokens.NL):
-            self.advance()
+        self.expect_greedy(tokens.NL, min_to_pass=0)
+        if self.match(tokens.EOF):
+            return
         start_pos = self.pos
         for parse_fn in self.statement_parse_order:
             node = parse_fn()
@@ -87,10 +89,11 @@ class Parser:
         return left
 
     def parse_simple_statement(self):
-        return self.parse_expression()
+        result = self.parse_expression()
+        self.expect((tokens.NL, tokens.EOF))
+        return result
         
     def parse_expression(self):
-        return self.parse_additive()
         return self.parse_compare()
 
     def parse_compare(self):
@@ -101,6 +104,10 @@ class Parser:
 
     def parse_additive(self):
         op_tokens = (tokens.Plus, tokens.Minus)
+        return self.binop_tree(self.parse_multiplicative, op_tokens)
+
+    def parse_multiplicative(self):
+        op_tokens = (tokens.Star, tokens.Slash)
         return self.binop_tree(self.parse_atom, op_tokens)
 
     def parse_atom(self):
@@ -118,7 +125,6 @@ class Parser:
             count += 1
         if count < min_to_pass:
             self.error()
-
 
     def expect(self, types):
         result = self.match(types)

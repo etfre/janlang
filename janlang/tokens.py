@@ -43,6 +43,12 @@ class Minus(BaseToken):
 class Plus(BaseToken):
     pass
 
+class Star(BaseToken):
+    pass
+
+class Slash(BaseToken):
+    pass
+
 class Dot(BaseToken):
     pass
 
@@ -93,3 +99,6 @@ class RepetitionToken(BaseToken):
     def __init__(self, low=0, high=None):
         self.low = low
         self.high = high
+
+class EOF(BaseToken):
+    pass

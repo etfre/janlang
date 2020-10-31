@@ -19,7 +19,8 @@ lark_parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=T
 
 test_tree = \
 """
-1.12 + 4
+2 + 3 * 4
+foobar
 """
 
 def test():

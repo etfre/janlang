@@ -16,6 +16,8 @@ class RuleLexer:
             (r'<=', tokens.LtE),
             (r'>', tokens.Gt),
             (r'<', tokens.Lt),
+            (r'\*', tokens.Star),
+            (r'\/', tokens.Slash),
             (r'-', tokens.Minus),
             (r'\+', tokens.Plus),
             (r'(\d*\.\d+|\d+\.\d*)', tokens.Float),
@@ -130,5 +132,6 @@ class RuleLexer:
                 yield self.read_keyword_or_name()
                 continue
             yield self.read_next_token()
+        yield tokens.EOF()
             # token, self.pos = self.read_next_token(self.pos)
             # yield token

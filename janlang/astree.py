@@ -139,7 +139,7 @@ class String(BaseActionNode):
 class Integer(BaseActionNode):
 
     def __init__(self, value: int):
-        self.value = value
+        self.value = int(value)
 
     def execute(self, context):
         return self.value
@@ -159,11 +159,10 @@ class IfStatement:
 class Float(BaseActionNode):
 
     def __init__(self, value: float):
-        self.value = value
+        self.value = float(value)
 
     def execute(self, context):
         return self.value
-
 
 class UnaryOp(BaseActionNode):
 
@@ -196,13 +195,17 @@ class Add(BaseActionNode):
         return left.execute(context) + right.execute(context)
 
 class Subtract(BaseActionNode):
-    pass
+    def evaluate(self, context, left, right):
+        return left.execute(context) - right.execute(context)
+
         
 class Multiply(BaseActionNode):
-    pass
+    def evaluate(self, context, left, right):
+        return left.execute(context) * right.execute(context)
 
 class Divide(BaseActionNode):
-    pass
+    def evaluate(self, context, left, right):
+        return left.execute(context) / right.execute(context)
 
 class Exponent(BaseActionNode):
 
