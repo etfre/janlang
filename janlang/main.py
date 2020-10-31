@@ -3,7 +3,9 @@ from lark.indenter import Indenter
 import interpreter
 import lark_parser
 import astree_constructor
+import ast_json
 import lexer
+import _parser as parser
 
 class TreeIndenter(Indenter):
     NL_type = '_NL'
@@ -13,25 +15,24 @@ class TreeIndenter(Indenter):
     DEDENT_type = '_DEDENT'
     tab_len = 4
 
-parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIndenter(), propagate_positions=True, maybe_placeholders=True)
+lark_parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIndenter(), propagate_positions=True, maybe_placeholders=True)
 
 test_tree = \
 """
-abcdef
-    hij
-lmn
-def fib(a, b, c="def"):
-    "c"
-    
+1.12 + 4
 """
 
 def test():
+    tokens = []
     for token in lexer.RuleLexer(test_tree):
+        tokens.append(token)
         print(token)
-    lark_tree = parser.parse(test_tree)
-    print(lark_tree.pretty())
-    root = astree_constructor.parse_node(lark_tree)
-    interpreter.Interpreter().execute(root)
+    tree = parser.Parser(tokens).parse_module()
+    print(ast_json.dumps(tree))
+    # lark_tree = lark_parser.parse(test_tree)
+    # print(lark_tree.pretty())
+    # root = astree_constructor.parse_node(lark_tree)
+    interpreter.Interpreter().execute(tree)
 
 if __name__ == '__main__':
     test()

@@ -110,6 +110,24 @@ class ExprSequenceSeparator(BaseActionNode):
     def execute(self, context):
         return None
 
+class Gt(BaseActionNode):
+    pass
+
+class GtE(BaseActionNode):
+    pass
+
+class Lt(BaseActionNode):
+    pass
+
+class LtE(BaseActionNode):
+    pass
+
+class Eq(BaseActionNode):
+    pass
+
+class NotEq(BaseActionNode):
+    pass
+
 class String(BaseActionNode):
 
     def __init__(self, value: str):
@@ -162,41 +180,29 @@ class UnaryOp(BaseActionNode):
             return not self.operand.evaluate(context)
         raise NotImplementedError
 
-class Add(BaseActionNode):
+class BinOp(BaseActionNode):
 
-    def __init__(self, left, right):
+    def __init__(self, left, op, right):
         self.left = left
+        self.op = op
         self.right = right
 
     def execute(self, context):
-        return self.left.evaluate(context) + self.right.evaluate(context)
+        return self.op.evaluate(context, self.left, self.right)
+
+class Add(BaseActionNode):
+    
+    def evaluate(self, context, left, right):
+        return left.execute(context) + right.execute(context)
 
 class Subtract(BaseActionNode):
-
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def execute(self, context):
-        return self.left.evaluate(context) - self.right.evaluate(context)
+    pass
         
 class Multiply(BaseActionNode):
-
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def execute(self, context):
-        return self.left.evaluate(context) * self.right.evaluate(context)
+    pass
 
 class Divide(BaseActionNode):
-
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def execute(self, context):
-        self.left.evaluate(context) / self.right.evaluate(context)
+    pass
 
 class Exponent(BaseActionNode):
 

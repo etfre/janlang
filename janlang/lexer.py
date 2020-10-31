@@ -5,41 +5,49 @@ import tokens
 class RuleLexer:
 
     def __init__(self, text):
-        self.token_patterns = tuple((re.compile(p, re.I), _) for p, _ in (
-            (r'\n', self.read_newline),
-            (r'[ ]+', self.read_whitespace),
-            (r'[_a-zA-Z0-9]+', tokens.Name),
-            (r'\|', tokens.OrToken),
+        self.token_patterns = tuple((re.compile(p), _) for p, _ in (
             (r'\(', tokens.OpenParen),
             (r'\)', tokens.CloseParen),
-            (r'\[', tokens.OptionalGroupingOpeningToken),
-            (r'\]', tokens.OptionalGroupingClosingToken),
+            (r'\[', tokens.OpenBracket),
+            (r'\]', tokens.CloseBracket),
+            (r'==', tokens.Eq),
+            (r'!=', tokens.NotEq),
+            (r'>=', tokens.GtE),
+            (r'<=', tokens.LtE),
+            (r'>', tokens.Gt),
+            (r'<', tokens.Lt),
+            (r'-', tokens.Minus),
+            (r'\+', tokens.Plus),
+            (r'(\d*\.\d+|\d+\.\d*)', tokens.Float),
+            (r'\d+', tokens.Int),
+            (':', tokens.Colon),
         ))
-
+        self.keywords = {
+            'if': tokens.If,
+            'def': tokens.FunctionDef,
+        }
         self.text = text
         self.pos = 0
         self.indentation_level = 0
         self.at_start_of_line = True
 
-    def read_newline(self, matched_text):
+    def read_newline(self):
         self.at_start_of_line = True
+        self.advance()
         return tokens.NL()
 
     def read_whitespace(self, matched_text):
         return tokens.Whitespace(matched_text)
 
-    def read_next_token(self, pos):
+    def read_next_token(self):
         for pattern, token_creator in self.token_patterns:
-            match = pattern.match(self.text, pos=pos) 
+            match = pattern.match(self.text, pos=self.pos) 
             if match:
-                matched_text = self.text[pos:match.span()[-1]]
+                matched_text = self.text[self.pos:match.span()[-1]]
                 token = token_creator(matched_text) if isclass(token_creator) else token_creator(matched_text)
-                if hasattr(token, 'consumed_char_count'):
-                    pos += token.consumed_char_count + 1
-                else:
-                    pos = match.span()[-1]
-                return token, pos
-        raise RuntimeError(f'Cannot tokenize text: {self.text[pos:]}')
+                self.pos = match.span()[-1]
+                return token
+        raise RuntimeError(f'Cannot tokenize text: {self.text[self.pos:]}')
 
     def read_start_of_line(self):
         spaces = 0
@@ -70,21 +78,57 @@ class RuleLexer:
             return
 
     def match(self, val):
+        if self.is_at_end:
+            return False
         end = self.pos + len(val)
-        return self.text[self.pos:end] == val
+        is_match = self.text[self.pos:end] == val
+        if is_match:
+            self.pos += len(val)
+        return is_match
+
+    def match_pattern(self, val):
+        if self.is_at_end:
+            return False
+        pattern = re.compile(val)
+
 
     def advance(self):
         char = self.peek()
         self.pos += 1
         return char
 
-    def 
+    def read_keyword_or_name(self):
+        start = self.pos
+        name = self.advance()
+        while not self.is_at_end:
+            ch = self.peek()
+            if not (ch.isalnum() or ch == '_'):
+                break
+            name += ch
+            self.advance()
+            if name in self.keywords:
+                return self.keywords[name]()
+        return tokens.Name(name)
+
+    def parse_operator(self):
+        for text, tok in self.operators:
+            if self.match(text):
+                return tok
 
     def __iter__(self):
         while not self.is_at_end:
             if self.at_start_of_line:
                 yield from self.read_start_of_line()
-            
-            tok = self.read_key
-            token, self.pos = self.read_next_token(self.pos)
-            yield token
+            ch = self.peek()
+            if ch == '\n':
+                yield self.read_newline()
+                continue
+            if ch == ' ':
+                self.advance()
+                continue
+            if ch.isalpha() or ch == '_':
+                yield self.read_keyword_or_name()
+                continue
+            yield self.read_next_token()
+            # token, self.pos = self.read_next_token(self.pos)
+            # yield token

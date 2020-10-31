@@ -18,12 +18,38 @@ class OpenParen(BaseToken):
     pass
 
 class CloseParen(BaseToken):
-    pass    
-
-class OptionalGroupingOpeningToken(BaseToken):
     pass
 
-class OptionalGroupingClosingToken(BaseToken):
+class Gt(BaseToken):
+    pass
+class GtE(BaseToken):
+    pass
+class Lt(BaseToken):
+    pass
+class LtE(BaseToken):
+    pass
+class Eq(BaseToken):
+    pass
+
+class NotEq(BaseToken):
+    pass
+
+class Colon(BaseToken):
+    pass
+
+class Minus(BaseToken):
+    pass
+
+class Plus(BaseToken):
+    pass
+
+class Dot(BaseToken):
+    pass
+
+class OpenBracket(BaseToken):
+    pass
+
+class CloseBracket(BaseToken):
     pass
 
 class Whitespace(BaseToken):
@@ -36,6 +62,16 @@ class NamedRuleToken(BaseToken):
     def __init__(self, name):
         self.name = name
 
+class Int(BaseToken):
+    
+    def __init__(self, val):
+        self.val = val
+
+class Float(BaseToken):
+    
+    def __init__(self, val):
+        self.val = val
+
 class NL(BaseToken):
     pass
 
@@ -43,6 +79,13 @@ class Indent(BaseToken):
     pass
 
 class Dedent(BaseToken):
+    pass
+class Name(BaseToken):
+    def __init__(self, val):
+        self.val = val
+class If(BaseToken):
+    pass
+class FunctionDef(BaseToken):
     pass
 
 class RepetitionToken(BaseToken):
