@@ -10,6 +10,11 @@ class Parser:
             self.parse_if_statement,
             self.parse_simple_statement,
         )
+        self.atoms = (
+            self.parse_name,
+            self.parse_int,
+            self.parse_float,
+        )
         self.comparison_tokens = {
             tokens.Eq: ast.Eq, 
             tokens.NotEq: ast.NotEq, 
@@ -111,13 +116,37 @@ class Parser:
         return self.binop_tree(self.parse_atom, op_tokens)
 
     def parse_atom(self):
-        tok = self.peek()
-        if isinstance(tok, tokens.Float):
-            self.advance()
+        start_pos = self.pos
+        for fn in self.atoms:
+            result = fn()
+            if result:
+                return result
+            self.pos = start_pos
+
+    def parse_name(self):
+        tok = self.match(tokens.Name)
+        if tok:
+            return ast.Name(tok.val)
+
+    def parse_call(self):
+        func = self.parse_expression()
+
+    def parse_float(self):
+        tok = self.match(tokens.Float)
+        if tok:
             return ast.Float(tok.val)
-        if isinstance(tok, tokens.Int):
-            self.advance()
+
+    def parse_int(self):
+        tok = self.match(tokens.Int)
+        if tok:
             return ast.Integer(tok.val)
+
+    def parse_listvals(self):
+        # (expr (',' expr)*)*
+        start = self.pos
+        vals = [] 
+        expr = self.parse_expression()
+        
 
     def expect_greedy(self, types, min_to_pass=1):
         count = 0
@@ -153,3 +182,6 @@ class Parser:
 
     def error(self, msg='Error'):
         raise RuntimeError(self.pos)
+
+class ParseError(Exception):
+    pass
