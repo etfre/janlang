@@ -10,7 +10,13 @@ class Parser:
             self.parse_if_statement,
             self.parse_simple_statement,
         )
+        self.atom_starts = (
+            self.parse_name,
+            self.parse_int,
+            self.parse_float,
+        )
         self.atoms = (
+            self.parse_call,
             self.parse_name,
             self.parse_int,
             self.parse_float,
@@ -41,52 +47,54 @@ class Parser:
         next_tok = self.peek() 
         while True:
             self.expect_greedy(tokens.NL, min_to_pass=0)
-            stmt = self.parse_statement()
-            if stmt is None:
+            try:
+                stmt = self.parse_statement()
+            except ParseError as e:
                 break
-            stmts.append(stmt)
+            else:
+                stmts.append(stmt)
         return stmts
 
 
     def parse_statement(self):
         self.expect_greedy(tokens.NL, min_to_pass=0)
         if self.match(tokens.EOF):
-            return
+            self.error()
         start_pos = self.pos
         for parse_fn in self.statement_parse_order:
-            node = parse_fn()
-            if node:
-                return node
-            self.pos = start_pos
+            try:
+                return parse_fn()
+            except ParseError:
+                self.pos = start_pos
+        self.error()
 
 
     def parse_if_statement(self):
-        next_tok = self.match(tokens.If)
-        if not next_tok:
-            return
+        next_tok = self.expect(tokens.If)
     
     def parse_operations(self, next_parse_fn, operator_tokens):
         operands = []
         operators = []
         while True:
-            if len(operands) == len(operators):
-                node = next_parse_fn()
-                add_list = operands
-            else:
-                tok = self.match(operator_tokens)
-                node = None if tok is None else self.binary_tokens_to_ast_nodes[type(tok)]()
-                add_list = operators
-            if node is None:
+            try:
+                if len(operands) == len(operators):
+                    node = next_parse_fn()
+                    add_list = operands
+                else:
+                    tok = self.expect(operator_tokens)
+                    node = self.binary_tokens_to_ast_nodes[type(tok)]()
+                    add_list = operators
+            except ParseError as e:
+                if not operands:
+                    raise e
                 break
-            add_list.append(node)
+            else:
+                add_list.append(node)
         assert not operands or len(operands) - 1 == len(operators)
         return operands, operators
 
     def binop_tree(self, next_parse_fn, operator_tokens):
         operands, operators = self.parse_operations(next_parse_fn, operator_tokens)
-        if not operands:
-            assert not operators
-            return
         left = operands[0]
         for i, op in enumerate(operators, start=1):
             right = operands[i]
@@ -118,28 +126,32 @@ class Parser:
     def parse_atom(self):
         start_pos = self.pos
         for fn in self.atoms:
-            result = fn()
-            if result:
-                return result
+            try:
+                return fn()
+            except ParseError:
+                pass
             self.pos = start_pos
+        self.error()
 
     def parse_name(self):
-        tok = self.match(tokens.Name)
-        if tok:
-            return ast.Name(tok.val)
+        tok = self.expect(tokens.Name)
+        return ast.Name(tok.val)
 
     def parse_call(self):
-        func = self.parse_expression()
+        print('abc', self.peek())
+        func = self.parse_name()
+        print('def')
+        self.expect(tokens.OpenParen)
+        self.expect(tokens.CloseParen)
+        return ast.Call(func, [], {})
 
     def parse_float(self):
-        tok = self.match(tokens.Float)
-        if tok:
-            return ast.Float(tok.val)
+        tok = self.expect(tokens.Float)
+        return ast.Float(tok.val)
 
     def parse_int(self):
-        tok = self.match(tokens.Int)
-        if tok:
-            return ast.Integer(tok.val)
+        tok = self.expect(tokens.Int)
+        return ast.Integer(tok.val)
 
     def parse_listvals(self):
         # (expr (',' expr)*)*
@@ -156,18 +168,19 @@ class Parser:
             self.error()
 
     def expect(self, types):
-        result = self.match(types)
-        if not result:
-            self.error()
-        return result
-
-    def match(self, types):
         if not isinstance(types, (list, tuple)):
             types = [types]
         next_tok = self.peek()
         for tok_type in types:
             if isinstance(next_tok, tok_type):
                 return self.advance()
+        self.error()
+
+    def match(self, types):
+        try:
+            return self.expect(types)
+        except ParseError:
+            pass
 
     def advance(self):
         curr = self.tokens[self.pos]
@@ -181,7 +194,7 @@ class Parser:
             return
 
     def error(self, msg='Error'):
-        raise RuntimeError(self.pos)
+        raise ParseError(self.pos)
 
 class ParseError(Exception):
     pass
