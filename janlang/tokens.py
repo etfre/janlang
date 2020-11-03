@@ -58,6 +58,9 @@ class OpenBracket(BaseToken):
 class CloseBracket(BaseToken):
     pass
 
+class Comma(BaseToken):
+    pass
+
 class Whitespace(BaseToken):
 
     def __init__(self, text): 
@@ -102,3 +105,7 @@ class RepetitionToken(BaseToken):
 
 class EOF(BaseToken):
     pass
+
+class String(BaseToken):
+    def __init__(self, val):
+        self.val = val

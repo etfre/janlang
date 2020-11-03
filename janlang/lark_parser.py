@@ -73,7 +73,7 @@ grammar = """
     slice: _chainable _SUBSCRIPT_PREFIX [expr] SLICE_SEPARATOR [expr] [SLICE_SEPARATOR [expr]] "]"
     attribute: _chainable  _ATTR_SEPARATOR NAME
     call: _ch
-    ainable _CALL_START ((arg_list ["," kwarg_list]) | [kwarg_list]) ")"
+    chainable _CALL_START ((arg_list ["," kwarg_list]) | [kwarg_list]) ")"
     arg_list: expr ("," expr)*
     kwarg_list: kwarg ("," kwarg)* 
     kwarg: NAME "=" expr

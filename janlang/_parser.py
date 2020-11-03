@@ -10,14 +10,9 @@ class Parser:
             self.parse_if_statement,
             self.parse_simple_statement,
         )
-        self.atom_starts = (
-            self.parse_name,
-            self.parse_int,
-            self.parse_float,
-        )
         self.atoms = (
-            self.parse_call,
             self.parse_name,
+            self.parse_string,
             self.parse_int,
             self.parse_float,
         )
@@ -44,28 +39,26 @@ class Parser:
 
     def parse_statements(self):
         stmts = []
-        next_tok = self.peek() 
         while True:
             self.expect_greedy(tokens.NL, min_to_pass=0)
-            try:
-                stmt = self.parse_statement()
-            except ParseError as e:
+            if isinstance(self.peek(), (tokens.NL, tokens.EOF)):
                 break
-            else:
-                stmts.append(stmt)
+            stmt = self.parse_statement()
+            stmts.append(stmt)
         return stmts
 
 
     def parse_statement(self):
-        self.expect_greedy(tokens.NL, min_to_pass=0)
-        if self.match(tokens.EOF):
-            self.error()
+        # self.expect_greedy(tokens.NL, min_to_pass=0)
+        # if self.match(tokens.EOF):
+        #     self.error()
         start_pos = self.pos
         for parse_fn in self.statement_parse_order:
             try:
                 return parse_fn()
             except ParseError:
                 self.pos = start_pos
+        print(self.peek())
         self.error()
 
 
@@ -125,25 +118,47 @@ class Parser:
 
     def parse_atom(self):
         start_pos = self.pos
+        node = None
         for fn in self.atoms:
             try:
-                return fn()
+                node = fn()
+            except ParseError:
+                self.pos = start_pos
+            else:
+                break
+        if not node:
+            self.error()
+        chain_functions = (self.finish_call,)
+        while True:
+            next_node = self.chain_atom(node, chain_functions)
+            if not next_node:
+                break
+            node = next_node
+        return node
+
+    def chain_atom(self, root, chain_functions):
+        next_node = None
+        start_pos = self.pos
+        for fn in chain_functions:
+            try:
+                next_node = fn(root)
             except ParseError:
                 pass
+            else:
+                break
+        if next_node is None:
             self.pos = start_pos
-        self.error()
+        return next_node
+
+    def finish_call(self, func):
+        self.expect(tokens.OpenParen)
+        args = self.parse_listvals()
+        self.expect(tokens.CloseParen)
+        return ast.Call(func, args, {})
 
     def parse_name(self):
         tok = self.expect(tokens.Name)
         return ast.Name(tok.val)
-
-    def parse_call(self):
-        print('abc', self.peek())
-        func = self.parse_name()
-        print('def')
-        self.expect(tokens.OpenParen)
-        self.expect(tokens.CloseParen)
-        return ast.Call(func, [], {})
 
     def parse_float(self):
         tok = self.expect(tokens.Float)
@@ -153,11 +168,28 @@ class Parser:
         tok = self.expect(tokens.Int)
         return ast.Integer(tok.val)
 
+    def parse_string(self):
+        tok = self.expect(tokens.String)
+        return ast.String(tok.val)
+
     def parse_listvals(self):
         # (expr (',' expr)*)*
         start = self.pos
-        vals = [] 
-        expr = self.parse_expression()
+        vals = []
+        pos = self.pos
+        while True:
+            try:
+                vals.append(self.parse_expression())
+                pos = self.pos
+            except ParseError:
+                break
+            try:
+                self.expect(tokens.Comma)
+                pos = self.pos
+            except ParseError:
+                break
+        self.pos = pos
+        return vals
         
 
     def expect_greedy(self, types, min_to_pass=1):
@@ -193,8 +225,12 @@ class Parser:
         except IndexError:
             return
 
-    def error(self, msg='Error'):
-        raise ParseError(self.pos)
+    def error(self, msg=''):
+        tok = self.peek()
+        error_msg = f'Got an error at token {self.pos}, {tok}'
+        if msg:
+            error_msg += f'\n{msg}'
+        raise ParseError(error_msg)
 
 class ParseError(Exception):
     pass

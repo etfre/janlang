@@ -10,6 +10,7 @@ class RuleLexer:
             (r'\)', tokens.CloseParen),
             (r'\[', tokens.OpenBracket),
             (r'\]', tokens.CloseBracket),
+            (r',', tokens.Comma),
             (r'==', tokens.Eq),
             (r'!=', tokens.NotEq),
             (r'>=', tokens.GtE),
@@ -117,11 +118,26 @@ class RuleLexer:
             if self.match(text):
                 return tok
 
+    def read_string(self, delim):
+        val = ''
+        if not self.advance() == delim:
+            self.error()
+        ch = self.advance()
+        while ch != delim:
+            val += ch
+            ch = self.advance()
+            if ch is None:
+                self.error()
+        return tokens.String(val)
+
+
     def __iter__(self):
         while not self.is_at_end:
             if self.at_start_of_line:
                 yield from self.read_start_of_line()
             ch = self.peek()
+            if ch in ('"', "'"):
+                yield self.read_string(ch)
             if ch == '\n':
                 yield self.read_newline()
                 continue
@@ -135,3 +151,6 @@ class RuleLexer:
         yield tokens.EOF()
             # token, self.pos = self.read_next_token(self.pos)
             # yield token
+
+    def error(self):
+        raise RuntimeError('abc')

@@ -15,19 +15,19 @@ class TreeIndenter(Indenter):
     DEDENT_type = '_DEDENT'
     tab_len = 4
 
-lark_parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIndenter(), propagate_positions=True, maybe_placeholders=True)
+# lark_parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIndenter(), propagate_positions=True, maybe_placeholders=True)
 
 test_tree = \
 """
 2 + 3 * 4
-print()
+print('abc' 4)
 """
 
 def test():
     tokens = []
-    for token in lexer.RuleLexer(test_tree):
+    for i, token in enumerate(lexer.RuleLexer(test_tree)):
         tokens.append(token)
-        print(token)
+        print(i, token)
     tree = parser.Parser(tokens).parse_module()
     print(ast_json.dumps(tree))
     # lark_tree = lark_parser.parse(test_tree)
