@@ -44,9 +44,10 @@ class Parser:
             if isinstance(self.peek(), (tokens.NL, tokens.EOF)):
                 break
             stmt = self.parse_statement()
+            print('got stmt', stmt)
+            print('next tok', self.peek())
             stmts.append(stmt)
         return stmts
-
 
     def parse_statement(self):
         # self.expect_greedy(tokens.NL, min_to_pass=0)
@@ -58,12 +59,23 @@ class Parser:
                 return parse_fn()
             except ParseError:
                 self.pos = start_pos
-        print(self.peek())
         self.error()
 
-
     def parse_if_statement(self):
-        next_tok = self.expect(tokens.If)
+        self.expect(tokens.If)
+        test = self.parse_expression()
+        self.expect(tokens.Colon)
+        self.expect(tokens.NL)
+        body = self.parse_block()
+        print(body)
+        return ast.IfStatement(test, body)
+
+    def parse_block(self):
+        self.expect(tokens.Indent)
+        stmts = self.parse_statements()
+        self.expect_if_not_eof(tokens.Dedent)
+        return stmts
+        
     
     def parse_operations(self, next_parse_fn, operator_tokens):
         operands = []
@@ -96,7 +108,7 @@ class Parser:
 
     def parse_simple_statement(self):
         result = self.parse_expression()
-        self.expect((tokens.NL, tokens.EOF))
+        self.expect_if_not_eof(tokens.NL)
         return result
         
     def parse_expression(self):
@@ -191,6 +203,9 @@ class Parser:
         self.pos = pos
         return vals
         
+    def expect_if_not_eof(self, types):
+        if not isinstance(self.peek(), tokens.EOF):
+            self.expect(types)
 
     def expect_greedy(self, types, min_to_pass=1):
         count = 0

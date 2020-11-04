@@ -146,14 +146,14 @@ class Integer(BaseActionNode):
 
 class IfStatement:
 
-    def __init__(self, condition, then):
-        self.condition = condition
-        self.then = then
+    def __init__(self, test, body):
+        self.test = test
+        self.body = body
 
     def execute(self, context):
-        test_result = self.condition.execute(context)
+        test_result = self.test.execute(context)
         if test_result:
-            for stmt in self.then:
+            for stmt in self.body:
                 stmt.execute(context)
 
 class Float(BaseActionNode):
