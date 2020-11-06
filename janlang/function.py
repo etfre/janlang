@@ -17,8 +17,17 @@ class Function:
             for i, param in enumerate(self.parameters):
                context.assign(param.name, arg_values[i])
             for statement in self.action:
-                statement.execute(context)
+                try:
+                    statement.execute(context)
+                except Return as e:
+                    result = e.value
+                    break
         else:
             result = self.action(context, *arg_values, **kwarg_values)
         context.remove_scope()
         return result
+
+class Return(BaseException):
+    
+    def __init__(self, value):
+        self.value = value

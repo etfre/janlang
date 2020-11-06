@@ -61,6 +61,9 @@ class CloseBracket(BaseToken):
 class Comma(BaseToken):
     pass
 
+class Return(BaseToken):
+    pass
+
 class Whitespace(BaseToken):
 
     def __init__(self, text): 

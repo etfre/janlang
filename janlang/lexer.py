@@ -27,6 +27,7 @@ class RuleLexer:
         ))
         self.keywords = {
             'if': tokens.If,
+            'return': tokens.Return,
             'fun': tokens.FunctionDef,
         }
         self.text = text

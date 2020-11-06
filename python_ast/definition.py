@@ -1,3 +1,3 @@
 def fib(a, b, cache=1):
-    pass
+    return a
 fib(1, b=2, cache=3)

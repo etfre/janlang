@@ -352,6 +352,15 @@ class FunctionDefinition(BaseActionNode):
         fn = function.Function(self.name, self.parameters, self.defaults, self.body)
         context.assign(self.name, fn)
     
+class Return(BaseActionNode):
+
+    def __init__(self, value):
+        self.value = value
+
+    def execute(self, context):
+        result = self.value.execute(context)
+        raise function.Return(result)
+
 class Variable(BaseActionNode):
 
     def __init__(self, value):

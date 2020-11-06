@@ -9,6 +9,7 @@ class Parser:
         self._hard_fail_on_error = False
         self.statement_parse_order = (
             self.parse_function_definition,
+            self.parse_return_statement,
             self.parse_if_statement,
             self.parse_simple_statement,
         )
@@ -79,6 +80,12 @@ class Parser:
         self.expect(tokens.NL)
         body = self.parse_block()
         return ast.IfStatement(test, body)
+
+    def parse_return_statement(self):
+        self.expect(tokens.Return)
+        val = self.parse_expression()
+        self.require(tokens.NL)
+        return ast.Return(val)
 
     def parse_block(self):
         self.expect(tokens.Indent)
