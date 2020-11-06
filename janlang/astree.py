@@ -50,7 +50,6 @@ class Module(BaseActionNode):
         self.body = body
 
     def execute(self, context):
-        print(self.body)
         for item in self.body:
             item.execute(context)
 
@@ -111,22 +110,34 @@ class ExprSequenceSeparator(BaseActionNode):
         return None
 
 class Gt(BaseActionNode):
-    pass
+    
+    def evaluate(self, context, left, right):
+        return left > right
 
 class GtE(BaseActionNode):
-    pass
+    
+    def evaluate(self, context, left, right):
+        return left >= right
 
 class Lt(BaseActionNode):
-    pass
+
+    def evaluate(self, context, left, right):
+        return left < right
 
 class LtE(BaseActionNode):
-    pass
+    
+    def evaluate(self, context, left, right):
+        return left <= right
 
 class Eq(BaseActionNode):
-    pass
+
+    def evaluate(self, context, left, right):
+        return left == right
 
 class NotEq(BaseActionNode):
-    pass
+    
+    def evaluate(self, context, left, right):
+        return left != right
 
 class String(BaseActionNode):
 
@@ -243,12 +254,11 @@ class Compare(BaseActionNode):
         self.comparators = comparators
 
     def execute(self, context):
-        operator_map = {'!=': operator.ne, '==': operator.eq, '<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
-        curr = self.left.evaluate(context)
+        # operator_map = {'!=': operator.ne, '==': operator.eq, '<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
+        curr = self.left.execute(context)
         for op, node in zip(self.ops, self.comparators):
-            op_func = operator_map[op]
-            right = node.evaluate(context)
-            if not op_func(curr, right):
+            right = node.execute(context)
+            if not op.evaluate(context, curr, right):
                 return False
             curr = right
         return True

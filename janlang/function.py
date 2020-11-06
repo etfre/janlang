@@ -8,14 +8,14 @@ class Function:
         self.defaults = defaults
         self.action = action 
 
-    def call(self, context: execution_context.ExecutionContext, args, kwargs):
-        arg_values = [arg.execute(context) for arg in args]
-        kwarg_values = {k: v.execute(context) for k, v in kwargs.items()}
+    def call(self, context: execution_context.ExecutionContext, arg_ast, kwarg_ast):
+        args = [arg.execute(context) for arg in arg_ast]
+        kwargs = {k: v.execute(context) for k, v in kwarg_ast.items()}
         result = None
         context.add_scope()
         if isinstance(self.action, list):
             for i, param in enumerate(self.parameters):
-               context.assign(param.name, arg_values[i])
+               context.assign(param.name, args[i])
             for statement in self.action:
                 try:
                     statement.execute(context)
@@ -23,7 +23,7 @@ class Function:
                     result = e.value
                     break
         else:
-            result = self.action(context, *arg_values, **kwarg_values)
+            result = self.action(context, *args, **kwargs)
         context.remove_scope()
         return result
 

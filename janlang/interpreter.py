@@ -17,4 +17,3 @@ class Interpreter:
         for name, native_fn in native_functions.FUNCTIONS.items():
             fn = function.Function(name, [], [], native_fn)
             context.assign(name, fn)
-            print(name, native_fn)

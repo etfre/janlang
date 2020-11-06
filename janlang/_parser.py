@@ -76,8 +76,8 @@ class Parser:
     def parse_if_statement(self):
         self.expect(tokens.If)
         test = self.parse_expression()
-        self.expect(tokens.Colon)
-        self.expect(tokens.NL)
+        self.require(tokens.Colon)
+        self.require(tokens.NL)
         body = self.parse_block()
         return ast.IfStatement(test, body)
 
@@ -90,7 +90,6 @@ class Parser:
     def parse_block(self):
         self.expect(tokens.Indent)
         stmts = self.parse_statements()
-        print(stmts)
         if not stmts:
             self.hard_error()
         self.require(tokens.Dedent)
@@ -136,9 +135,10 @@ class Parser:
 
     def parse_compare(self):
         op_tokens = tuple(self.comparison_tokens)
-        nodes, operators = self.parse_operations(self.parse_additive, op_tokens)
-        if len(nodes) == 1:
-            return nodes[0]
+        (left, *comparators), operators = self.parse_operations(self.parse_additive, op_tokens)
+        if not comparators:
+            return left
+        return ast.Compare(left, operators, comparators)
 
     def parse_additive(self):
         op_tokens = (tokens.Plus, tokens.Minus)
