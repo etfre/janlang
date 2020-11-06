@@ -301,6 +301,7 @@ class Parameter(BaseActionNode):
 
     def __init__(self, name):   
         self.name = name
+
 class Call(BaseActionNode):
 
     def __init__(self, fn, args, kwargs):
@@ -314,47 +315,11 @@ class Call(BaseActionNode):
         kwarg_values = {k: v.execute(context) for k, v in self.kwargs.items()}
         return arg_values, kwarg_values, function_to_call
 
-    def add_argument_frame(self, context, function_to_call, arg_values):
-        frame = context.argument_frames[-1].copy()
-        for i, arg_value in enumerate(arg_values):
-            param = function_to_call.parameters[i]
-            frame[param['name']] = arg_value
-        context.argument_frames.append(frame)
-
     def execute(self, context: execution_context.ExecutionContext):
         function_to_call = self.fn.execute(context)
         if not isinstance(function_to_call, function.Function):
             raise RuntimeError(f'Trying to call a function, but got {function_to_call}')
         return function_to_call.call(context, self.args, self.kwargs)
-            # self.add_argument_frame(context, function_to_call, arg_values)
-            # result = function_to_call.action.evaluate(context)
-            # context.argument_frames.pop()
-            # return result
-        try:
-            result = function_to_call(*arg_values, **kwarg_values)
-        except Exception as e:
-            print(f'Error calling function {function_to_call}:')
-            raise e
-        if isinstance(result, types.GeneratorType):
-            return evaluate_generator(result)
-        return result
-
-    def evaluate_lazy(self, context):
-        arg_values, kwarg_values, function_to_call = self.prepare_call(context)
-        if isinstance(function_to_call, FunctionDefinition):
-            self.add_argument_frame(context, function_to_call, arg_values)
-            yield from function_to_call.action.evaluate_lazy(context)
-            context.argument_frames.pop()
-        else:
-            try:
-                result = function_to_call(*arg_values, **kwarg_values)
-            except Exception as e:
-                print(f'Error calling function {function_to_call}:')
-                raise e
-            if isinstance(result, types.GeneratorType):
-                yield from exhaust_generator(result)
-            else:
-                yield self, result
 
 class Assignment(BaseActionNode):
 
@@ -377,11 +342,15 @@ class Name(BaseActionNode):
 
 class FunctionDefinition(BaseActionNode):
 
-    def __init__(self, name: str, parameters, default_values, body):
+    def __init__(self, name: str, parameters, defaults, body):
         self.name = name
         self.parameters = parameters
-        self.default_values = default_values
+        self.defaults = defaults
         self.body = body
+
+    def execute(self, context: execution_context.ExecutionContext):
+        fn = function.Function(self.name, self.parameters, self.defaults, self.body)
+        context.assign(self.name, fn)
     
 class Variable(BaseActionNode):
 

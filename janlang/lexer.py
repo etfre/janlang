@@ -27,7 +27,7 @@ class RuleLexer:
         ))
         self.keywords = {
             'if': tokens.If,
-            'def': tokens.FunctionDef,
+            'fun': tokens.FunctionDef,
         }
         self.text = text
         self.pos = 0
@@ -138,6 +138,7 @@ class RuleLexer:
             ch = self.peek()
             if ch in ('"', "'"):
                 yield self.read_string(ch)
+                continue
             if ch == '\n':
                 yield self.read_newline()
                 continue
@@ -148,6 +149,9 @@ class RuleLexer:
                 yield self.read_keyword_or_name()
                 continue
             yield self.read_next_token()
+        yield tokens.NL()
+        for i in range(self.indentation_level):
+            yield tokens.Dedent()
         yield tokens.EOF()
             # token, self.pos = self.read_next_token(self.pos)
             # yield token

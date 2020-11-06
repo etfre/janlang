@@ -21,7 +21,6 @@ def main():
     for i, token in enumerate(lexer.RuleLexer(text)):
         tokens.append(token)
         print(i, token)
-    print(tokens)
     tree = parser.Parser(tokens).parse_module()
     print(ast_json.dumps(tree))
     interpreter.Interpreter().execute(tree)

@@ -6,7 +6,9 @@ class Parser:
     def __init__(self, _tokens):
         self.tokens = _tokens
         self.pos = 0
+        self._hard_fail_on_error = False
         self.statement_parse_order = (
+            self.parse_function_definition,
             self.parse_if_statement,
             self.parse_simple_statement,
         )
@@ -41,18 +43,15 @@ class Parser:
         stmts = []
         while True:
             self.expect_greedy(tokens.NL, min_to_pass=0)
-            if isinstance(self.peek(), (tokens.NL, tokens.EOF)):
+            if isinstance(self.peek(), tokens.EOF):
                 break
-            stmt = self.parse_statement()
-            print('got stmt', stmt)
-            print('next tok', self.peek())
-            stmts.append(stmt)
+            try:
+                stmts.append(self.parse_statement())
+            except ParseError:
+                break
         return stmts
 
     def parse_statement(self):
-        # self.expect_greedy(tokens.NL, min_to_pass=0)
-        # if self.match(tokens.EOF):
-        #     self.error()
         start_pos = self.pos
         for parse_fn in self.statement_parse_order:
             try:
@@ -61,19 +60,33 @@ class Parser:
                 self.pos = start_pos
         self.error()
 
+    def parse_function_definition(self):
+        self.expect(tokens.FunctionDef)
+        name = self.require(tokens.Name)
+        self.require(tokens.OpenParen)
+        params = self.parse_parameters()
+        self.require(tokens.CloseParen)
+        self.require(tokens.Colon)
+        self.require(tokens.NL)
+        body = self.parse_block()
+    
+        return ast.FunctionDefinition('fib', params, [], body)
+
     def parse_if_statement(self):
         self.expect(tokens.If)
         test = self.parse_expression()
         self.expect(tokens.Colon)
         self.expect(tokens.NL)
         body = self.parse_block()
-        print(body)
         return ast.IfStatement(test, body)
 
     def parse_block(self):
         self.expect(tokens.Indent)
         stmts = self.parse_statements()
-        self.expect_if_not_eof(tokens.Dedent)
+        print(stmts)
+        if not stmts:
+            self.hard_error()
+        self.require(tokens.Dedent)
         return stmts
         
     
@@ -108,7 +121,7 @@ class Parser:
 
     def parse_simple_statement(self):
         result = self.parse_expression()
-        self.expect_if_not_eof(tokens.NL)
+        self.expect(tokens.NL)
         return result
         
     def parse_expression(self):
@@ -184,6 +197,23 @@ class Parser:
         tok = self.expect(tokens.String)
         return ast.String(tok.val)
 
+    def parse_parameters(self):
+        start = self.pos
+        vals = []
+        pos = self.pos
+        while True:
+            try:
+                param_name = self.parse_name().value
+                vals.append(ast.Parameter(param_name))
+                pos = self.pos
+                self.expect(tokens.Comma)
+                pos = self.pos
+            except ParseError:
+                break
+        self.pos = pos
+        return vals
+        
+
     def parse_listvals(self):
         # (expr (',' expr)*)*
         start = self.pos
@@ -193,9 +223,6 @@ class Parser:
             try:
                 vals.append(self.parse_expression())
                 pos = self.pos
-            except ParseError:
-                break
-            try:
                 self.expect(tokens.Comma)
                 pos = self.pos
             except ParseError:
@@ -223,6 +250,12 @@ class Parser:
                 return self.advance()
         self.error()
 
+    def require(self, types):
+        try:
+            return self.expect(types)
+        except ParseError as e:
+            raise HardParseError() from e
+
     def match(self, types):
         try:
             return self.expect(types)
@@ -240,12 +273,23 @@ class Parser:
         except IndexError:
             return
 
-    def error(self, msg=''):
+    def _error(self, msg, error_class):
         tok = self.peek()
         error_msg = f'Got an error at token {self.pos}, {tok}'
         if msg:
             error_msg += f'\n{msg}'
-        raise ParseError(error_msg)
+        raise error_class(error_msg)
+
+    def error(self, msg=''):
+        self._error(msg, ParseError)
+
+    def hard_error(self, msg=''):
+        self._error(msg, HardParseError)
+
+
 
 class ParseError(Exception):
+    pass
+
+class HardParseError(Exception):
     pass

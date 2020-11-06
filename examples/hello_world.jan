@@ -1,2 +1,4 @@
-if 1 - 0:
-    print('abc')
+fun fib(a, b):
+    print(a + b)
+
+fib(3, 8)
