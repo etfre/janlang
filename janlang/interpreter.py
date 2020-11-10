@@ -15,6 +15,6 @@ class Interpreter:
 
     def add_native_functions(self, context: execution_context.ExecutionContext):
         for name, native_fn in native_functions.FUNCTIONS.items():
-            fn = function.Function(name, [], native_fn)
+            fn = function.Function(name, [], [], native_fn)
+            context.declare(name, 'native_function')
             context.assign(name, fn)
-            print(name, native_fn)

@@ -1,31 +1,29 @@
+import argparse
 from lark import Lark
 from lark.indenter import Indenter
 import interpreter
 import lark_parser
 import astree_constructor
+import ast_json
+import lexer
+import _parser as parser
 
-class TreeIndenter(Indenter):
-    NL_type = '_NL'
-    OPEN_PAREN_types = []
-    CLOSE_PAREN_types = []
-    INDENT_type = '_INDENT'
-    DEDENT_type = '_DEDENT'
-    tab_len = 4
-
-parser = Lark(lark_parser.grammar, parser='lalr', start='module', postlex=TreeIndenter(), propagate_positions=True, maybe_placeholders=True)
-
-test_tree = \
-"""
-def fib(a, b, c="def"):
-    "c"
-    
-"""
-
-def test():
-    lark_tree = parser.parse(test_tree)
-    print(lark_tree.pretty())
-    root = astree_constructor.parse_node(lark_tree)
-    interpreter.Interpreter().execute(root)
+def main():
+    arg_parser = argparse.ArgumentParser(description='Process some integers.')
+    arg_parser.add_argument('main', type=str,
+                        help='an integer for the accumulator')
+    args = arg_parser.parse_args()
+    text = ''
+    with open(args.main) as f:
+        text = f.read()
+        print (args.main)
+    tokens = []
+    for i, token in enumerate(lexer.RuleLexer(text)):
+        tokens.append(token)
+        print(i, token)
+    tree = parser.Parser(tokens).parse_module()
+    print(ast_json.dumps(tree))
+    interpreter.Interpreter().execute(tree)
 
 if __name__ == '__main__':
-    test()
+    main()

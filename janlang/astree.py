@@ -50,7 +50,6 @@ class Module(BaseActionNode):
         self.body = body
 
     def execute(self, context):
-        print(self.body)
         for item in self.body:
             item.execute(context)
 
@@ -110,6 +109,36 @@ class ExprSequenceSeparator(BaseActionNode):
     def execute(self, context):
         return None
 
+class Gt(BaseActionNode):
+    
+    def evaluate(self, context, left, right):
+        return left > right
+
+class GtE(BaseActionNode):
+    
+    def evaluate(self, context, left, right):
+        return left >= right
+
+class Lt(BaseActionNode):
+
+    def evaluate(self, context, left, right):
+        return left < right
+
+class LtE(BaseActionNode):
+    
+    def evaluate(self, context, left, right):
+        return left <= right
+
+class Eq(BaseActionNode):
+
+    def evaluate(self, context, left, right):
+        return left == right
+
+class NotEq(BaseActionNode):
+    
+    def evaluate(self, context, left, right):
+        return left != right
+
 class String(BaseActionNode):
 
     def __init__(self, value: str):
@@ -121,31 +150,32 @@ class String(BaseActionNode):
 class Integer(BaseActionNode):
 
     def __init__(self, value: int):
-        self.value = value
+        self.value = int(value)
 
     def execute(self, context):
         return self.value
 
 class IfStatement:
 
-    def __init__(self, condition, then):
-        self.condition = condition
-        self.then = then
+    def __init__(self, test, orelse, body):
+        self.test = test
+        self.orelse = orelse
+        self.body = body
 
     def execute(self, context):
-        test_result = self.condition.execute(context)
+        test_result = self.test.execute(context)
         if test_result:
-            for stmt in self.then:
+            for stmt in self.body:
                 stmt.execute(context)
+        return test_result
 
 class Float(BaseActionNode):
 
     def __init__(self, value: float):
-        self.value = value
+        self.value = float(value)
 
     def execute(self, context):
         return self.value
-
 
 class UnaryOp(BaseActionNode):
 
@@ -162,41 +192,33 @@ class UnaryOp(BaseActionNode):
             return not self.operand.evaluate(context)
         raise NotImplementedError
 
-class Add(BaseActionNode):
+class BinOp(BaseActionNode):
 
-    def __init__(self, left, right):
+    def __init__(self, left, op, right):
         self.left = left
+        self.op = op
         self.right = right
 
     def execute(self, context):
-        return self.left.evaluate(context) + self.right.evaluate(context)
+        return self.op.evaluate(context, self.left, self.right)
+
+class Add(BaseActionNode):
+    
+    def evaluate(self, context, left, right):
+        return left.execute(context) + right.execute(context)
 
 class Subtract(BaseActionNode):
+    def evaluate(self, context, left, right):
+        return left.execute(context) - right.execute(context)
 
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def execute(self, context):
-        return self.left.evaluate(context) - self.right.evaluate(context)
         
 class Multiply(BaseActionNode):
-
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def execute(self, context):
-        return self.left.evaluate(context) * self.right.evaluate(context)
+    def evaluate(self, context, left, right):
+        return left.execute(context) * right.execute(context)
 
 class Divide(BaseActionNode):
-
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def execute(self, context):
-        self.left.evaluate(context) / self.right.evaluate(context)
+    def evaluate(self, context, left, right):
+        return left.execute(context) / right.execute(context)
 
 class Exponent(BaseActionNode):
 
@@ -234,12 +256,11 @@ class Compare(BaseActionNode):
         self.comparators = comparators
 
     def execute(self, context):
-        operator_map = {'!=': operator.ne, '==': operator.eq, '<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
-        curr = self.left.evaluate(context)
+        # operator_map = {'!=': operator.ne, '==': operator.eq, '<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
+        curr = self.left.execute(context)
         for op, node in zip(self.ops, self.comparators):
-            op_func = operator_map[op]
-            right = node.evaluate(context)
-            if not op_func(curr, right):
+            right = node.execute(context)
+            if not op.evaluate(context, curr, right):
                 return False
             curr = right
         return True
@@ -292,6 +313,7 @@ class Parameter(BaseActionNode):
 
     def __init__(self, name):   
         self.name = name
+
 class Call(BaseActionNode):
 
     def __init__(self, fn, args, kwargs):
@@ -305,47 +327,11 @@ class Call(BaseActionNode):
         kwarg_values = {k: v.execute(context) for k, v in self.kwargs.items()}
         return arg_values, kwarg_values, function_to_call
 
-    def add_argument_frame(self, context, function_to_call, arg_values):
-        frame = context.argument_frames[-1].copy()
-        for i, arg_value in enumerate(arg_values):
-            param = function_to_call.parameters[i]
-            frame[param['name']] = arg_value
-        context.argument_frames.append(frame)
-
     def execute(self, context: execution_context.ExecutionContext):
         function_to_call = self.fn.execute(context)
         if not isinstance(function_to_call, function.Function):
             raise RuntimeError(f'Trying to call a function, but got {function_to_call}')
         return function_to_call.call(context, self.args, self.kwargs)
-            # self.add_argument_frame(context, function_to_call, arg_values)
-            # result = function_to_call.action.evaluate(context)
-            # context.argument_frames.pop()
-            # return result
-        try:
-            result = function_to_call(*arg_values, **kwarg_values)
-        except Exception as e:
-            print(f'Error calling function {function_to_call}:')
-            raise e
-        if isinstance(result, types.GeneratorType):
-            return evaluate_generator(result)
-        return result
-
-    def evaluate_lazy(self, context):
-        arg_values, kwarg_values, function_to_call = self.prepare_call(context)
-        if isinstance(function_to_call, FunctionDefinition):
-            self.add_argument_frame(context, function_to_call, arg_values)
-            yield from function_to_call.action.evaluate_lazy(context)
-            context.argument_frames.pop()
-        else:
-            try:
-                result = function_to_call(*arg_values, **kwarg_values)
-            except Exception as e:
-                print(f'Error calling function {function_to_call}:')
-                raise e
-            if isinstance(result, types.GeneratorType):
-                yield from exhaust_generator(result)
-            else:
-                yield self, result
 
 class Assignment(BaseActionNode):
 
@@ -353,8 +339,9 @@ class Assignment(BaseActionNode):
         self.left = left
         self.right = right
 
-    def execute(self, context):
+    def execute(self, context: execution_context.ExecutionContext):
         name_string = self.left.value
+        symbol = context.symbol_lookup(name_string)
         value = self.right.execute(context)
         context.assign(name_string, value)
 
@@ -364,16 +351,30 @@ class Name(BaseActionNode):
         self.value = value
 
     def execute(self, context):
-        return context.lookup(self.value)
+        return context.symbol_lookup(self.value).value
 
 class FunctionDefinition(BaseActionNode):
 
-    def __init__(self, name: str, parameters, default_values, body):
+    def __init__(self, name: str, parameters, defaults, body):
         self.name = name
         self.parameters = parameters
-        self.default_values = default_values
+        self.defaults = defaults
         self.body = body
+
+    def execute(self, context: execution_context.ExecutionContext):
+        fn = function.Function(self.name, self.parameters, self.defaults, self.body)
+        context.declare(self.name, 'function')
+        context.assign(self.name, fn)
     
+class Return(BaseActionNode):
+
+    def __init__(self, value):
+        self.value = value
+
+    def execute(self, context):
+        result = self.value.execute(context)
+        raise function.Return(result)
+
 class Variable(BaseActionNode):
 
     def __init__(self, value):
@@ -405,3 +406,14 @@ class RegularExpression(BaseActionNode):
 
 class Nil:
     pass
+
+class VariableDeclaration(BaseActionNode):
+
+    def __init__(self, name, is_mutable):
+        self.name = name
+        self.is_mutable = is_mutable
+
+    def execute(self, context: execution_context.ExecutionContext):
+        name = self.name.value
+        decl_type = 'variable' if self.is_mutable else 'immutable_variable'
+        context.declare(name, decl_type)
