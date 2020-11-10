@@ -17,6 +17,7 @@ class RuleLexer:
             (r'<=', tokens.LtE),
             (r'>', tokens.Gt),
             (r'<', tokens.Lt),
+            (r'=', tokens.Assign),
             (r'\*', tokens.Star),
             (r'\/', tokens.Slash),
             (r'-', tokens.Minus),
@@ -29,6 +30,8 @@ class RuleLexer:
             'if': tokens.If,
             'return': tokens.Return,
             'fun': tokens.FunctionDef,
+            'var': tokens.VariableDeclaration,
+            'mut': tokens.Mutable,
         }
         self.text = text
         self.pos = 0
@@ -110,8 +113,8 @@ class RuleLexer:
                 break
             name += ch
             self.advance()
-            if name in self.keywords:
-                return self.keywords[name]()
+        if name in self.keywords:
+            return self.keywords[name]()
         return tokens.Name(name)
 
     def parse_operator(self):

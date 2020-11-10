@@ -12,6 +12,7 @@ class Parser:
             self.parse_return_statement,
             self.parse_if_statement,
             self.parse_simple_statement,
+            self.parse_assign_and_declaration_statement,
         )
         self.atoms = (
             self.parse_name,
@@ -47,7 +48,11 @@ class Parser:
             if isinstance(self.peek(), tokens.EOF):
                 break
             try:
-                stmts.append(self.parse_statement())
+                result = self.parse_statement()
+                if isinstance(result, (list, tuple)):
+                    stmts.extend(result)
+                else:
+                    stmts.append(result)
             except ParseError:
                 break
         return stmts
@@ -63,7 +68,8 @@ class Parser:
 
     def parse_function_definition(self):
         self.expect(tokens.FunctionDef)
-        name = self.require(tokens.Name)
+        name = self.require(tokens.Name).value
+        print(name)
         self.require(tokens.OpenParen)
         params = self.parse_parameters()
         self.require(tokens.CloseParen)
@@ -71,7 +77,22 @@ class Parser:
         self.require(tokens.NL)
         body = self.parse_block()
     
-        return ast.FunctionDefinition('fib', params, [], body)
+        return ast.FunctionDefinition(name, params, [], body)
+
+    def parse_assign_and_declaration_statement(self):
+        result = []
+        decl = self.match(tokens.VariableDeclaration)
+        if decl:
+            mut = self.match(tokens.Mutable)
+            is_mutable = bool(mut)
+            name = self.parse_name()
+            result.append(ast.VariableDeclaration(name, is_mutable))
+        else:
+            name = self.parse_name()
+        if self.match(tokens.Assign):
+            right = self.parse_expression()
+            result.append(ast.Assignment(name, right))
+        return result
 
     def parse_if_statement(self):
         self.expect(tokens.If)
@@ -79,7 +100,7 @@ class Parser:
         self.require(tokens.Colon)
         self.require(tokens.NL)
         body = self.parse_block()
-        return ast.IfStatement(test, body)
+        return ast.IfStatement(test, [], body)
 
     def parse_return_statement(self):
         self.expect(tokens.Return)
@@ -190,7 +211,7 @@ class Parser:
 
     def parse_name(self):
         tok = self.expect(tokens.Name)
-        return ast.Name(tok.val)
+        return ast.Name(tok.value)
 
     def parse_float(self):
         tok = self.expect(tokens.Float)

@@ -34,6 +34,9 @@ class Eq(BaseToken):
 class NotEq(BaseToken):
     pass
 
+class Assign(BaseToken):
+    pass
+
 class Colon(BaseToken):
     pass
 
@@ -93,11 +96,19 @@ class Indent(BaseToken):
 class Dedent(BaseToken):
     pass
 class Name(BaseToken):
-    def __init__(self, val):
-        self.val = val
+    def __init__(self, value):
+        self.value = value
+
 class If(BaseToken):
     pass
+
 class FunctionDef(BaseToken):
+    pass
+
+class VariableDeclaration(BaseToken):
+    pass
+
+class Mutable(BaseToken):
     pass
 
 class RepetitionToken(BaseToken):

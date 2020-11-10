@@ -15,6 +15,7 @@ class Function:
         context.add_scope()
         if isinstance(self.action, list):
             for i, param in enumerate(self.parameters):
+               context.declare(param.name, 'parameter')
                context.assign(param.name, args[i])
             for statement in self.action:
                 try:

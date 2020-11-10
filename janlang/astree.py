@@ -157,8 +157,9 @@ class Integer(BaseActionNode):
 
 class IfStatement:
 
-    def __init__(self, test, body):
+    def __init__(self, test, orelse, body):
         self.test = test
+        self.orelse = orelse
         self.body = body
 
     def execute(self, context):
@@ -166,6 +167,7 @@ class IfStatement:
         if test_result:
             for stmt in self.body:
                 stmt.execute(context)
+        return test_result
 
 class Float(BaseActionNode):
 
@@ -337,8 +339,9 @@ class Assignment(BaseActionNode):
         self.left = left
         self.right = right
 
-    def execute(self, context):
+    def execute(self, context: execution_context.ExecutionContext):
         name_string = self.left.value
+        symbol = context.symbol_lookup(name_string)
         value = self.right.execute(context)
         context.assign(name_string, value)
 
@@ -348,7 +351,7 @@ class Name(BaseActionNode):
         self.value = value
 
     def execute(self, context):
-        return context.lookup(self.value)
+        return context.symbol_lookup(self.value).value
 
 class FunctionDefinition(BaseActionNode):
 
@@ -360,6 +363,7 @@ class FunctionDefinition(BaseActionNode):
 
     def execute(self, context: execution_context.ExecutionContext):
         fn = function.Function(self.name, self.parameters, self.defaults, self.body)
+        context.declare(self.name, 'function')
         context.assign(self.name, fn)
     
 class Return(BaseActionNode):
@@ -402,3 +406,14 @@ class RegularExpression(BaseActionNode):
 
 class Nil:
     pass
+
+class VariableDeclaration(BaseActionNode):
+
+    def __init__(self, name, is_mutable):
+        self.name = name
+        self.is_mutable = is_mutable
+
+    def execute(self, context: execution_context.ExecutionContext):
+        name = self.name.value
+        decl_type = 'variable' if self.is_mutable else 'immutable_variable'
+        context.declare(name, decl_type)
