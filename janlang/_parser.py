@@ -11,6 +11,9 @@ class Parser:
             self.parse_function_definition,
             self.parse_return_statement,
             self.parse_if_statement,
+            self.parse_while_statement,
+            self.parse_continue_statement,
+            self.parse_break_statement,
             self.parse_simple_statement,
             self.parse_assign_and_declaration_statement,
         )
@@ -101,6 +104,24 @@ class Parser:
         self.require(tokens.NL)
         body = self.parse_block()
         return ast.IfStatement(test, [], body)
+
+    def parse_while_statement(self):
+        self.expect(tokens.While)
+        test = self.parse_expression()
+        self.require(tokens.Colon)
+        self.require(tokens.NL)
+        body = self.parse_block()
+        return ast.WhileStatement(test, body)
+
+    def parse_continue_statement(self):
+        self.expect(tokens.Continue)
+        self.require(tokens.NL)
+        return ast.ContinueStatement()
+
+    def parse_break_statement(self):
+        self.expect(tokens.Break)
+        self.require(tokens.NL)
+        return ast.BreakStatement()
 
     def parse_return_statement(self):
         self.expect(tokens.Return)

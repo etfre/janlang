@@ -28,6 +28,10 @@ class RuleLexer:
         ))
         self.keywords = {
             'if': tokens.If,
+            'while': tokens.While,
+            'for': tokens.For,
+            'continue': tokens.Continue,
+            'break': tokens.Break,
             'return': tokens.Return,
             'fun': tokens.FunctionDef,
             'var': tokens.VariableDeclaration,
@@ -92,12 +96,6 @@ class RuleLexer:
         if is_match:
             self.pos += len(val)
         return is_match
-
-    def match_pattern(self, val):
-        if self.is_at_end:
-            return False
-        pattern = re.compile(val)
-
 
     def advance(self):
         char = self.peek()

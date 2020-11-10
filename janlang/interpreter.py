@@ -18,3 +18,9 @@ class Interpreter:
             fn = function.Function(name, [], [], native_fn)
             context.declare(name, 'native_function')
             context.assign(name, fn)
+
+class Continue(BaseException):
+    pass
+
+class Break(BaseException):
+    pass

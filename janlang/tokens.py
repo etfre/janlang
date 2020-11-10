@@ -102,6 +102,18 @@ class Name(BaseToken):
 class If(BaseToken):
     pass
 
+class While(BaseToken):
+    pass
+
+class For(BaseToken):
+    pass
+
+class Continue(BaseToken):
+    pass
+
+class Break(BaseToken):
+    pass
+
 class FunctionDef(BaseToken):
     pass
 

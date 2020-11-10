@@ -3,6 +3,8 @@ import re
 import json
 import operator
 import execution_context
+import interpreter
+import interpreter
 import function
 
 def evaluate_generator(gen):
@@ -344,6 +346,44 @@ class Assignment(BaseActionNode):
         symbol = context.symbol_lookup(name_string)
         value = self.right.execute(context)
         context.assign(name_string, value)
+
+class WhileStatement(BaseActionNode):
+
+    def __init__(self, test, body):
+        self.test = test
+        self.body = body
+
+    def execute(self, context: execution_context.ExecutionContext):
+        while self.test.execute(context):
+            for stmt in self.body:
+                try:
+                    stmt.execute(context)
+                except interpreter.Continue:
+                    break
+                except interpreter.Break:
+                    return
+
+class ForStatement(BaseActionNode):
+
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def execute(self, context: execution_context.ExecutionContext):
+        name_string = self.left.value
+        symbol = context.symbol_lookup(name_string)
+        value = self.right.execute(context)
+        context.assign(name_string, value)
+
+class ContinueStatement(BaseActionNode):
+
+    def execute(self, context: execution_context.ExecutionContext):
+        raise interpreter.Continue()
+
+class BreakStatement(BaseActionNode):
+
+    def execute(self, context: execution_context.ExecutionContext):
+        raise interpreter.Break()
 
 class Name(BaseActionNode):
 
