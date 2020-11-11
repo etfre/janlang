@@ -113,6 +113,16 @@ class Parser:
         body = self.parse_block()
         return ast.WhileStatement(test, body)
 
+    def parse_for_statement(self):
+        self.expect(tokens.For)
+        name = self.parse_name()
+        self.require(tokens.In)
+        iter = self.parse_expression()
+        self.require(tokens.Colon)
+        self.require(tokens.NL)
+        body = self.parse_block()
+        return ast.ForStatement(name, iter, body)
+
     def parse_continue_statement(self):
         self.expect(tokens.Continue)
         self.require(tokens.NL)

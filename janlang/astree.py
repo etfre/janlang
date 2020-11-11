@@ -365,9 +365,10 @@ class WhileStatement(BaseActionNode):
 
 class ForStatement(BaseActionNode):
 
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
+    def __init__(self, name, iter, body):
+        self.name = name
+        self.iter = iter
+        self.body = body
 
     def execute(self, context: execution_context.ExecutionContext):
         name_string = self.left.value

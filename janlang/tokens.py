@@ -114,6 +114,9 @@ class Continue(BaseToken):
 class Break(BaseToken):
     pass
 
+class In(BaseToken):
+    pass
+
 class FunctionDef(BaseToken):
     pass
 

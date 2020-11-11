@@ -30,6 +30,7 @@ class RuleLexer:
             'if': tokens.If,
             'while': tokens.While,
             'for': tokens.For,
+            'in': tokens.In,
             'continue': tokens.Continue,
             'break': tokens.Break,
             'return': tokens.Return,
