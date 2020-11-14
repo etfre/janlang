@@ -22,6 +22,7 @@ class Parser:
             self.parse_string,
             self.parse_int,
             self.parse_float,
+            self.parse_list,
         )
         self.comparison_tokens = {
             tokens.Eq: ast.Eq, 
@@ -147,6 +148,11 @@ class Parser:
         self.require(tokens.Dedent)
         return stmts
         
+    def parse_list(self):
+        self.expect(tokens.OpenBracket)
+        vals = self.parse_listvals()
+        self.require(tokens.CloseBracket)
+        return ast.List(vals)
     
     def parse_operations(self, next_parse_fn, operator_tokens):
         operands = []

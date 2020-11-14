@@ -6,6 +6,7 @@ import execution_context
 import interpreter
 import interpreter
 import function
+import data_structures
 
 def evaluate_generator(gen):
     assert isinstance(gen, types.GeneratorType)
@@ -273,7 +274,9 @@ class List(BaseActionNode):
         self.items = items
 
     def execute(self, context):
-        return [x.evaluate(context) for x in self.items]
+        vals = [x.execute(context) for x in self.items]
+        l = data_structures.List(vals)
+        return l
 
 class Attribute(BaseActionNode):
 
@@ -365,16 +368,15 @@ class WhileStatement(BaseActionNode):
 
 class ForStatement(BaseActionNode):
 
-    def __init__(self, name, iter, body):
-        self.name = name
+    def __init__(self, target, iter, body):
+        self.target = target
         self.iter = iter
         self.body = body
 
     def execute(self, context: execution_context.ExecutionContext):
-        name_string = self.left.value
-        symbol = context.symbol_lookup(name_string)
-        value = self.right.execute(context)
-        context.assign(name_string, value)
+        name_string = self.target.value
+        context.add_scope()
+        context.declare(name_string)
 
 class ContinueStatement(BaseActionNode):
 
