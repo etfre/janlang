@@ -1,4 +1,8 @@
 import argparse
+import llvmlite
+import codegen
+import llvm_compiler
+import jit
 from lark import Lark
 from lark.indenter import Indenter
 import interpreter
@@ -23,7 +27,14 @@ def main():
         print(i, token)
     tree = parser.Parser(tokens).parse_module()
     print(ast_json.dumps(tree))
-    interpreter.Interpreter().execute(tree)
+    comp = llvm_compiler.JanCompiler()
+    mod = codegen.compile(tree)
+    # interpreter.Interpreter().execute(tree)
+
+@codegen.autojit
+def add(a,b):
+    return a + b
 
 if __name__ == '__main__':
     main()
+    print(add(3,4))

@@ -73,7 +73,6 @@ class Parser:
     def parse_function_definition(self):
         self.expect(tokens.FunctionDef)
         name = self.require(tokens.Name).value
-        print(name)
         self.require(tokens.OpenParen)
         params = self.parse_parameters()
         self.require(tokens.CloseParen)
@@ -89,10 +88,10 @@ class Parser:
         if decl:
             mut = self.match(tokens.Mutable)
             is_mutable = bool(mut)
-            name = self.parse_name()
+            name = self.parse_name(ast.Store())
             result.append(ast.VariableDeclaration(name, is_mutable))
         else:
-            name = self.parse_name()
+            name = self.parse_name(ast.Store())
         if self.match(tokens.Assign):
             right = self.parse_expression()
             result.append(ast.Assignment(name, right))
@@ -116,7 +115,7 @@ class Parser:
 
     def parse_for_statement(self):
         self.expect(tokens.For)
-        name = self.parse_name()
+        name = self.parse_name(ast.Load())
         self.require(tokens.In)
         iter = self.parse_expression()
         self.require(tokens.Colon)
@@ -246,9 +245,13 @@ class Parser:
         self.expect(tokens.CloseParen)
         return ast.Call(func, args, {})
 
-    def parse_name(self):
+    def parse_name(self, ctx):
         tok = self.expect(tokens.Name)
-        return ast.Name(tok.value)
+        return ast.Name(tok.value, ctx)
+
+    def parse_name_text(self)
+        tok = self.expect(tokens.Name)
+        return tok.value
 
     def parse_float(self):
         tok = self.expect(tokens.Float)
@@ -268,7 +271,7 @@ class Parser:
         pos = self.pos
         while True:
             try:
-                param_name = self.parse_name().value
+                param_name = self.parse_name_text()
                 vals.append(ast.Parameter(param_name))
                 pos = self.pos
                 self.expect(tokens.Comma)
