@@ -1,9 +1,5 @@
 import argparse
-from lark import Lark
-from lark.indenter import Indenter
 import interpreter
-import lark_parser
-import astree_constructor
 import ast_json
 import lexer
 import _parser as parser

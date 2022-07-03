@@ -6,45 +6,14 @@ import execution_context
 import interpreter
 import interpreter
 import function
+import values
 
-def evaluate_generator(gen):
-    assert isinstance(gen, types.GeneratorType)
-    last = None
-    for node, item in exhaust_generator(gen):
-        last = item
-    return last
-
-def exhaust_generator(gen):
-    assert isinstance(gen, types.GeneratorType)
-    for item in gen:
-        if isinstance(item, types.GeneratorType):
-            yield from exhaust_generator(item)
-        else:
-            yield item
 
 class BaseActionNode:
     
     def execute(self, context):
         print(type(self))
         raise NotImplementedError
-
-    def evaluate_lazy(self, context):
-        yield self, self.evaluate(context)
-
-    def evaluate_without_context(self):
-        import recognition.actions.context
-        context = recognition.actions.context.empty_recognition_context() 
-        return self.evaluate(context)
-
-    def perform(self, context):
-        context.argument_frames.append({})
-        gen = self.evaluate_lazy(context)
-        evaluated_nodes = []
-        written_nodes = []
-        for i, (node, result) in enumerate(self.evaluate_lazy(context)):
-            assert isinstance(node, BaseActionNode)
-            evaluated_nodes.append(node)
-        context.argument_frames.pop()
 
 class Module(BaseActionNode):
 
@@ -54,38 +23,6 @@ class Module(BaseActionNode):
     def execute(self, context):
         for item in self.body:
             item.execute(context)
-
-class ExpressionSequence(BaseActionNode):
-
-    def __init__(self, expressions):
-        self.expressions = expressions
-
-    def execute(self, context):
-        evaluated_nodes = []
-        last = None
-        for i, expr in enumerate(self.expressions):
-            if isinstance(expr, Literal) and i > 1:
-                second_previous, previous = self.expressions[i - 2:i]
-                if isinstance(second_previous, Literal) and isinstance(previous, ExprSequenceSeparator):
-                    last += previous.value
-            result = expr.evaluate(context)
-            if isinstance(last, str) and isinstance(result, str):
-                last += result
-            elif result is not None:
-                last = result
-        return last
-
-    def evaluate_lazy(self, context):
-        for expr in self.expressions:
-            yield from exhaust_generator(expr.evaluate_lazy(context))
-
-class Literal(BaseActionNode):
-    
-    def __init__(self, value: str):
-        self.value = value
-
-    def execute(self, context):
-        return self.value
 
 class ArgumentReference(BaseActionNode):
 
@@ -102,14 +39,6 @@ class Whitespace(BaseActionNode):
 
     def execute(self, context):
         return self.value
-
-class ExprSequenceSeparator(BaseActionNode):
-
-    def __init__(self, value: str):
-        self.value = value
-
-    def execute(self, context):
-        return None
 
 class Gt(BaseActionNode):
     
@@ -147,7 +76,7 @@ class String(BaseActionNode):
         self.value = value
 
     def execute(self, context):
-        return self.value
+        return values.String(self.value)
 
 class Integer(BaseActionNode):
 
@@ -155,7 +84,7 @@ class Integer(BaseActionNode):
         self.value = int(value)
 
     def execute(self, context):
-        return self.value
+        return values.Integer(self.value)
 
 class IfStatement:
 
@@ -177,7 +106,7 @@ class Float(BaseActionNode):
         self.value = float(value)
 
     def execute(self, context):
-        return self.value
+        return values.Float(self.value)
 
 class UnaryOp(BaseActionNode):
 
@@ -273,7 +202,7 @@ class List(BaseActionNode):
         self.items = items
 
     def execute(self, context):
-        return [x.evaluate(context) for x in self.items]
+        return values.List([x.execute(context) for x in self.items])
 
 class Attribute(BaseActionNode):
 
@@ -415,27 +344,6 @@ class Return(BaseActionNode):
     def execute(self, context):
         result = self.value.execute(context)
         raise function.Return(result)
-
-class Variable(BaseActionNode):
-
-    def __init__(self, value):
-        self.value = value
-
-    def execute(self, context):
-        index = self.value - 1 if self.value > 0 else self.value
-        try:
-            action = context.variables[index]
-        except IndexError:
-            return
-        return action.evaluate(context)
-
-    def evaluate_lazy(self, context):
-        index = self.value - 1 if self.value > 0 else self.value
-        try:
-            action = context.variables[index]
-        except IndexError:
-            return
-        yield from exhaust_generator(action.evaluate_lazy(context))
 
 class RegularExpression(BaseActionNode):
     

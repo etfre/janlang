@@ -126,6 +126,9 @@ class VariableDeclaration(BaseToken):
 class Mutable(BaseToken):
     pass
 
+class Period(BaseToken):
+    pass
+
 class RepetitionToken(BaseToken):
 
     def __init__(self, low=0, high=None):

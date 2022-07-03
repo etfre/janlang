@@ -25,6 +25,7 @@ class RuleLexer:
             (r'(\d*\.\d+|\d+\.\d*)', tokens.Float),
             (r'\d+', tokens.Int),
             (':', tokens.Colon),
+            ('.', tokens.Period),
         ))
         self.keywords = {
             'if': tokens.If,
@@ -71,7 +72,7 @@ class RuleLexer:
         if level_change == 1:
             yield tokens.Indent()
         elif level_change > 1:
-            raise RuntimeError('Indent cant be >1')
+            raise RuntimeError('Indent cant be > 1')
         else:
             for i in range(0, level_change, -1):
                 yield tokens.Dedent()

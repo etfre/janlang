@@ -3,5 +3,6 @@ lib/
 include/
 lib64
 share/
+debug/
 pyvenv.cfg
 *.pyc

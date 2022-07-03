@@ -22,6 +22,7 @@ class Parser:
             self.parse_string,
             self.parse_int,
             self.parse_float,
+            self.parse_list,
         )
         self.comparison_tokens = {
             tokens.Eq: ast.Eq, 
@@ -72,7 +73,6 @@ class Parser:
     def parse_function_definition(self):
         self.expect(tokens.FunctionDef)
         name = self.require(tokens.Name).value
-        print(name)
         self.require(tokens.OpenParen)
         params = self.parse_parameters()
         self.require(tokens.CloseParen)
@@ -212,7 +212,7 @@ class Parser:
                 break
         if not node:
             self.error()
-        chain_functions = (self.finish_call,)
+        chain_functions = (self.finish_call, self.finish_attribute)
         while True:
             next_node = self.chain_atom(node, chain_functions)
             if not next_node:
@@ -234,11 +234,27 @@ class Parser:
             self.pos = start_pos
         return next_node
 
+    def finish_index(self, val):
+        self.expect(tokens.Period)
+        name = self.expect(tokens.Name)
+        return ast.Attribute(val, name.value)
+
+    def finish_attribute(self, val):
+        self.expect(tokens.Period)
+        name = self.expect(tokens.Name)
+        return ast.Attribute(val, name.value)
+
     def finish_call(self, func):
         self.expect(tokens.OpenParen)
         args = self.parse_listvals()
         self.expect(tokens.CloseParen)
         return ast.Call(func, args, {})
+
+    # def finish_list(self, func):
+    #     self.expect(tokens.OpenParen)
+    #     args = self.parse_listvals()
+    #     self.expect(tokens.CloseParen)
+    #     return ast.List(func, args, {})
 
     def parse_name(self):
         tok = self.expect(tokens.Name)
@@ -251,6 +267,12 @@ class Parser:
     def parse_int(self):
         tok = self.expect(tokens.Int)
         return ast.Integer(tok.val)
+
+    def parse_list(self):
+        tok = self.expect(tokens.OpenBracket)
+        list_vals = self.parse_listvals()
+        tok = self.expect(tokens.CloseBracket)
+        return ast.List(list_vals)
 
     def parse_string(self):
         tok = self.expect(tokens.String)

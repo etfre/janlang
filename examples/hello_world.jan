@@ -1,6 +1,5 @@
 fun fib(n):
     var bar = 5
-    bar = 8
     if n < 3:
         return 1
     return fib(n - 2) + fib(n - 1)
@@ -9,4 +8,4 @@ var mut i = 1
 while i < 10:
     i = i + 1
 
-print(fib(1))
+print(fib(19))
