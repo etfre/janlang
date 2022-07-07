@@ -135,7 +135,7 @@ class RuleLexer:
         return tokens.String(val)
 
 
-    def __iter__(self):
+    def tokenize(self):
         while not self.is_at_end:
             if self.at_start_of_line:
                 yield from self.read_start_of_line()
@@ -162,3 +162,8 @@ class RuleLexer:
 
     def error(self):
         raise RuntimeError('abc')
+
+    @classmethod
+    def from_path(cls, path: str):
+        with open(path) as f:
+            return cls(f.read())

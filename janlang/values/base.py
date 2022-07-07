@@ -1,2 +1,4 @@
 class BaseValue:
-    pass
+    
+    def __getattr__(self):
+        pass

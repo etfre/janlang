@@ -39,6 +39,11 @@ class Parser:
             tokens.Minus: ast.Subtract,
         }
 
+    def parse_root(self):
+        main = self.parse_module()
+        program = ast.Program(main)
+        return program
+
     def parse_module(self):
         tok_length = len(self.tokens)
         body = self.parse_statements()
@@ -49,16 +54,13 @@ class Parser:
         stmts = []
         while True:
             self.expect_greedy(tokens.NL, min_to_pass=0)
-            if isinstance(self.peek(), tokens.EOF):
+            if isinstance(self.peek(), (tokens.EOF, tokens.Dedent)):
                 break
-            try:
-                result = self.parse_statement()
-                if isinstance(result, (list, tuple)):
-                    stmts.extend(result)
-                else:
-                    stmts.append(result)
-            except ParseError:
-                break
+            result = self.parse_statement()
+            if isinstance(result, (list, tuple)):
+                stmts.extend(result)
+            else:
+                stmts.append(result)
         return stmts
 
     def parse_statement(self):
@@ -212,7 +214,7 @@ class Parser:
                 break
         if not node:
             self.error()
-        chain_functions = (self.finish_call, self.finish_attribute)
+        chain_functions = (self.finish_call, self.finish_attribute, self.finish_index)
         while True:
             next_node = self.chain_atom(node, chain_functions)
             if not next_node:
@@ -235,9 +237,10 @@ class Parser:
         return next_node
 
     def finish_index(self, val):
-        self.expect(tokens.Period)
-        name = self.expect(tokens.Name)
-        return ast.Attribute(val, name.value)
+        self.expect(tokens.OpenBracket)
+        expr = self.parse_expression()
+        self.expect(tokens.CloseBracket)
+        return ast.Index(val, expr)
 
     def finish_attribute(self, val):
         self.expect(tokens.Period)

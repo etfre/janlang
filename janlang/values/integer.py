@@ -7,9 +7,6 @@ def foobar(a, b, op):
         return float.Float(value)
     else:
         return Integer(value)
-    raise RuntimeError
-
-
 
 
 class Integer(base.BaseValue):
@@ -24,6 +21,9 @@ class Integer(base.BaseValue):
         return foobar(self, other, operator.mul)
     def __div__(self, other):
         return foobar(self, other, operator.div)
+
+    def __lt__(self, other):
+        return self._val < other._val
 
     def __repr__(self) -> str:
         return str(self._val)

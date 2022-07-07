@@ -15,6 +15,20 @@ class BaseActionNode:
         print(type(self))
         raise NotImplementedError
 
+    def typecheck(self, context):
+        raise NotImplementedError
+
+class Program(BaseActionNode):
+
+    def __init__(self, main):
+        self.main = main
+
+    def execute(self, context):
+        self.main.execute(context)
+
+    def typecheck(self, context):
+        pass
+
 class Module(BaseActionNode):
 
     def __init__(self, body):
@@ -40,32 +54,32 @@ class Whitespace(BaseActionNode):
     def execute(self, context):
         return self.value
 
-class Gt(BaseActionNode):
+class Gt:
     
     def evaluate(self, context, left, right):
         return left > right
 
-class GtE(BaseActionNode):
+class GtE:
     
     def evaluate(self, context, left, right):
         return left >= right
 
-class Lt(BaseActionNode):
+class Lt:
 
     def evaluate(self, context, left, right):
         return left < right
 
-class LtE(BaseActionNode):
+class LtE:
     
     def evaluate(self, context, left, right):
         return left <= right
 
-class Eq(BaseActionNode):
+class Eq:
 
     def evaluate(self, context, left, right):
         return left == right
 
-class NotEq(BaseActionNode):
+class NotEq:
     
     def evaluate(self, context, left, right):
         return left != right
@@ -133,21 +147,21 @@ class BinOp(BaseActionNode):
     def execute(self, context):
         return self.op.evaluate(context, self.left, self.right)
 
-class Add(BaseActionNode):
+class Add:
     
     def evaluate(self, context, left, right):
         return left.execute(context) + right.execute(context)
 
-class Subtract(BaseActionNode):
+class Subtract:
     def evaluate(self, context, left, right):
         return left.execute(context) - right.execute(context)
 
         
-class Multiply(BaseActionNode):
+class Multiply:
     def evaluate(self, context, left, right):
         return left.execute(context) * right.execute(context)
 
-class Divide(BaseActionNode):
+class Divide:
     def evaluate(self, context, left, right):
         return left.execute(context) / right.execute(context)
 
@@ -213,6 +227,9 @@ class Attribute(BaseActionNode):
     def execute(self, context):
         attribute_of_value = self.attribute_of.execute(context)
         return getattr(attribute_of_value, self.name)
+
+    def typecheck(self):
+        pass
 
 class Index(BaseActionNode):
 

@@ -1,1 +1,1 @@
-source bin/activate && code . && cd janlang
+source VENV/bin/activate && code . && cd janlang
