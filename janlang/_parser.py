@@ -17,10 +17,12 @@ class Parser:
             self.parse_continue_statement,
             self.parse_break_statement,
             self.parse_simple_statement,
+            self.parse_assert_statement,
             self.parse_assign_and_declaration_statement,
         )
         self.atoms = (
             self.parse_name,
+            self.parse_boolean,
             self.parse_string,
             self.parse_int,
             self.parse_float,
@@ -100,6 +102,8 @@ class Parser:
         if self.match(tokens.Assign):
             right = self.parse_expression()
             result.append(ast.Assignment(name, right))
+        elif not decl:
+            self.error()
         return result
 
     def parse_if_statement(self):
@@ -205,6 +209,9 @@ class Parser:
         op_tokens = (tokens.Star, tokens.Slash)
         return self.binop_tree(self.parse_atom, op_tokens)
 
+    def parse_unary(self):
+        pass
+
     def parse_atom(self):
         start_pos = self.pos
         node = None
@@ -261,6 +268,22 @@ class Parser:
     #     args = self.parse_listvals()
     #     self.expect(tokens.CloseParen)
     #     return ast.List(func, args, {})
+
+    def parse_name(self):
+        tok = self.expect(tokens.Name)
+        return ast.Name(tok.value)
+
+    def parse_assert_statement(self):
+        self.expect(tokens.Assert)
+        test = self.parse_expression()
+        return ast.AssertStatement(test)
+
+    def parse_boolean(self):
+        tok = self.expect((tokens.TrueToken, tokens.FalseToken))
+        if isinstance(tok, tokens.TrueToken):
+            return ast.TrueNode()
+        else:
+            return ast.FalseNode()
 
     def parse_name(self):
         tok = self.expect(tokens.Name)

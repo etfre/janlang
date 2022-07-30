@@ -38,6 +38,10 @@ class RuleLexer:
             'def': tokens.FunctionDef,
             'var': tokens.VariableDeclaration,
             'mut': tokens.Mutable,
+            'true': tokens.TrueToken,
+            'false': tokens.FalseToken,
+            'null': tokens.NullToken,
+            'assert': tokens.Assert,
         }
         self.text = text
         self.pos = 0

@@ -3,7 +3,7 @@ import execution_context
 import native_functions
 import function
 import astree as ast
-import environment, values
+import environment, values, errors
 
 class Interpreter:
 
@@ -18,11 +18,17 @@ class Interpreter:
             ast.Block: self.execute_block,
             ast.Name: self.execute_name,
             ast.Integer: self.execute_integer,
+            ast.TrueNode: self.execute_true,
+            ast.FalseNode: self.execute_false,
             ast.Call: self.execute_call,
             ast.FunctionDefinition: self.execute_function_definition,
             ast.Return: self.execute_return,
             ast.BinOp: self.execute_bin_op,
             ast.Compare: self.execute_compare,
+            ast.WhileStatement: self.execute_while_statement,
+            ast.BreakStatement: self.execute_break_statement,
+            ast.ContinueStatement: self.execute_continue_statement,
+            ast.AssertStatement: self.execute_assert_statement,
         }
         self.environment = environment.Environment(parent=None)
         self.setup_globals()
@@ -35,6 +41,26 @@ class Interpreter:
     def execute_module(self, module: ast.Module):
         for stmt in module.body:
             self.execute(stmt)
+
+    def execute_assert_statement(self, assert_statement: ast.AssertStatement):
+        if not self.execute(assert_statement.test):
+            raise errors.JanAssertionError()
+
+    def execute_while_statement(self, while_statement: ast.WhileStatement):
+        while self.execute(while_statement.test):
+            try:
+                self.execute(while_statement.body)
+            except Continue:
+                pass
+            except Break:
+                return
+
+    def execute_break_statement(self, break_statement: ast.BreakStatement):
+        raise Break()
+
+    def execute_continue_statement(self, continue_statement: ast.ContinueStatement):
+        raise Continue()
+
 
     def execute_variable_declaration(self, vardec: ast.VariableDeclaration):
         name = vardec.name.value
@@ -95,6 +121,12 @@ class Interpreter:
 
     def execute_integer(self, int_: ast.Integer) -> values.String:
         return values.Integer(int_.value)
+
+    def execute_true(self, node: ast.TrueNode) -> values.Boolean:
+        return values.Boolean(True)
+
+    def execute_false(self, node: ast.FalseNode) -> values.Boolean:
+        return values.Boolean(False)
 
     def execute_if_statement(self, if_statement: ast.String):
         test_result = self.execute(if_statement.test)

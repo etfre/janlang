@@ -22,6 +22,12 @@ class Integer(base.BaseValue):
     def __div__(self, other):
         return foobar(self, other, operator.div)
 
+    def __eq__(self, other):
+        return self._val == other._val
+
+    def __ne__(self, other):
+        return self._val != other._val
+
     def __lt__(self, other):
         return self._val < other._val
 

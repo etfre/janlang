@@ -10,3 +10,4 @@ class Boolean(base.BaseValue):
 
     def __bool__(self):
         return self._val
+    

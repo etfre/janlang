@@ -1,0 +1,7 @@
+var a = "global"
+if 1:
+    def showA():
+        print(a)
+    showA()
+    var a = "block"
+    showA()

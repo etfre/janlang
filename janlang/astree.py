@@ -9,7 +9,7 @@ import function
 import values
 
 
-class BaseActionNode:
+class BaseNode:
     
     def execute(self, context):
         print(type(self))
@@ -18,7 +18,7 @@ class BaseActionNode:
     def typecheck(self, context):
         raise NotImplementedError
 
-class Program(BaseActionNode):
+class Program(BaseNode):
 
     def __init__(self, main):
         self.main = main
@@ -29,7 +29,7 @@ class Program(BaseActionNode):
     def typecheck(self, context):
         pass
 
-class Block(BaseActionNode):
+class Block(BaseNode):
 
     def __init__(self, statements):
         self.statements = statements
@@ -38,7 +38,7 @@ class Block(BaseActionNode):
         for stmt in self.statements:
             stmt.execute(context)
 
-class Module(BaseActionNode):
+class Module(BaseNode):
 
     def __init__(self, body):
         self.body = body
@@ -47,7 +47,7 @@ class Module(BaseActionNode):
         for item in self.body:
             item.execute(context)
 
-class ArgumentReference(BaseActionNode):
+class ArgumentReference(BaseNode):
 
     def __init__(self, value: str):
         self.value = value
@@ -55,7 +55,7 @@ class ArgumentReference(BaseActionNode):
     def execute(self, context):
         return context.argument_frames[-1][self.value]
 
-class Whitespace(BaseActionNode):
+class Whitespace(BaseNode):
 
     def __init__(self, value: str):
         self.value = value
@@ -93,7 +93,7 @@ class NotEq:
     def evaluate(self, left, right):
         return left != right
 
-class String(BaseActionNode):
+class String(BaseNode):
 
     def __init__(self, value: str):
         self.value = value
@@ -101,7 +101,7 @@ class String(BaseActionNode):
     def execute(self, context):
         return values.String(self.value)
 
-class Integer(BaseActionNode):
+class Integer(BaseNode):
 
     def __init__(self, value: int):
         self.value = int(value)
@@ -123,7 +123,7 @@ class IfStatement:
                 stmt.execute(context)
         return test_result
 
-class Float(BaseActionNode):
+class Float(BaseNode):
 
     def __init__(self, value: float):
         self.value = float(value)
@@ -131,7 +131,7 @@ class Float(BaseActionNode):
     def execute(self, context):
         return values.Float(self.value)
 
-class UnaryOp(BaseActionNode):
+class UnaryOp(BaseNode):
 
     def __init__(self, operation, operand):
         self.operation = operation
@@ -146,7 +146,7 @@ class UnaryOp(BaseActionNode):
             return not self.operand.evaluate(context)
         raise NotImplementedError
 
-class BinOp(BaseActionNode):
+class BinOp(BaseNode):
 
     def __init__(self, left, op, right):
         self.left = left
@@ -174,7 +174,7 @@ class Divide:
     def evaluate(self, left, right):
         return left / right
 
-class Exponent(BaseActionNode):
+class Exponent(BaseNode):
 
     def __init__(self, left, right):
         self.left = left
@@ -184,7 +184,7 @@ class Exponent(BaseActionNode):
         right = self.right.evaluate(context)
         return self.left.evaluate(context) ** right
 
-class Or(BaseActionNode):
+class Or(BaseNode):
 
     def __init__(self, left, right):
         self.left = left
@@ -193,7 +193,7 @@ class Or(BaseActionNode):
     def execute(self, context):
         return self.left.evaluate(context) or self.right.evaluate(context)
 
-class And(BaseActionNode):
+class And(BaseNode):
 
     def __init__(self, left, right):
         self.left = left
@@ -202,7 +202,7 @@ class And(BaseActionNode):
     def execute(self, context):
         return self.left.evaluate(context) and self.right.evaluate(context)
 
-class Compare(BaseActionNode):
+class Compare(BaseNode):
 
     def __init__(self, left, ops, comparators):
         self.left = left
@@ -219,7 +219,7 @@ class Compare(BaseActionNode):
             curr = right
         return True
 
-class List(BaseActionNode):
+class List(BaseNode):
 
     def __init__(self, items):
         self.items = items
@@ -227,7 +227,7 @@ class List(BaseActionNode):
     def execute(self, context):
         return values.List([x.execute(context) for x in self.items])
 
-class Attribute(BaseActionNode):
+class Attribute(BaseNode):
 
     def __init__(self, attribute_of, name):
         self.attribute_of = attribute_of
@@ -240,7 +240,7 @@ class Attribute(BaseActionNode):
     def typecheck(self):
         pass
 
-class Index(BaseActionNode):
+class Index(BaseNode):
 
     def __init__(self, index_of, index):
         self.index_of = index_of
@@ -251,7 +251,7 @@ class Index(BaseActionNode):
         index = self.index.execute(context)
         return index_of_value[index]
 
-class Slice(BaseActionNode):
+class Slice(BaseNode):
 
     def __init__(self, slice_of, start, stop, step):
         self.slice_of = slice_of
@@ -266,12 +266,12 @@ class Slice(BaseActionNode):
         step = None if self.step is None else self.step.execute(context)
         return slice_of_value[start:stop:step]
 
-class Parameter(BaseActionNode):
+class Parameter(BaseNode):
 
     def __init__(self, name):   
         self.name = name
 
-class Call(BaseActionNode):
+class Call(BaseNode):
 
     def __init__(self, fn, args, kwargs):
         self.fn = fn
@@ -290,7 +290,7 @@ class Call(BaseActionNode):
             raise RuntimeError(f'Trying to call a function, but got {function_to_call}')
         return function_to_call.call(context, self.args, self.kwargs)
 
-class Assignment(BaseActionNode):
+class Assignment(BaseNode):
 
     def __init__(self, left, right):
         self.left = left
@@ -302,7 +302,7 @@ class Assignment(BaseActionNode):
         value = self.right.execute(context)
         context.assign(name_string, value)
 
-class WhileStatement(BaseActionNode):
+class WhileStatement(BaseNode):
 
     def __init__(self, test, body):
         self.test = test
@@ -318,7 +318,7 @@ class WhileStatement(BaseActionNode):
                 except interpreter.Break:
                     return
 
-class ForStatement(BaseActionNode):
+class ForStatement(BaseNode):
 
     def __init__(self, name, iter, body):
         self.name = name
@@ -331,17 +331,17 @@ class ForStatement(BaseActionNode):
         value = self.right.execute(context)
         context.assign(name_string, value)
 
-class ContinueStatement(BaseActionNode):
+class ContinueStatement(BaseNode):
 
     def execute(self, context: execution_context.ExecutionContext):
         raise interpreter.Continue()
 
-class BreakStatement(BaseActionNode):
+class BreakStatement(BaseNode):
 
     def execute(self, context: execution_context.ExecutionContext):
         raise interpreter.Break()
 
-class Name(BaseActionNode):
+class Name(BaseNode):
 
     def __init__(self, value):
         self.value = value
@@ -349,7 +349,7 @@ class Name(BaseActionNode):
     def execute(self, context):
         return context.symbol_lookup(self.value).value
 
-class FunctionDefinition(BaseActionNode):
+class FunctionDefinition(BaseNode):
 
     def __init__(self, name: str, parameters, defaults, body):
         self.name = name
@@ -362,7 +362,7 @@ class FunctionDefinition(BaseActionNode):
         context.declare(self.name, 'function')
         context.assign(self.name, fn)
     
-class ClassDefinition(BaseActionNode):
+class ClassDefinition(BaseNode):
 
     def __init__(self, name: str, parameters, defaults, body):
         self.name = name
@@ -375,7 +375,7 @@ class ClassDefinition(BaseActionNode):
         context.declare(self.name, 'function')
         context.assign(self.name, fn)
     
-class Return(BaseActionNode):
+class Return(BaseNode):
 
     def __init__(self, value):
         self.value = value
@@ -384,18 +384,21 @@ class Return(BaseActionNode):
         result = self.value.execute(context)
         raise function.Return(result)
 
-class RegularExpression(BaseActionNode):
-    
-    def __init__(self, value):
-        self.value = value
+class AssertStatement(BaseNode):
 
-    def execute(self, context):
-        return re.compile(self.value, flags=re.IGNORECASE)
+    def __init__(self, test):
+        self.test = test
+
+class TrueNode(BaseNode):
+    pass
+
+class FalseNode(BaseNode):
+    pass
 
 class Nil:
     pass
 
-class VariableDeclaration(BaseActionNode):
+class VariableDeclaration(BaseNode):
 
     def __init__(self, name, is_mutable):
         self.name = name

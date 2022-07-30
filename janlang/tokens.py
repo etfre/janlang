@@ -11,6 +11,18 @@ class Name(BaseToken):
     def __init__(self, value):
         self.value = value
 
+class Assert(BaseToken):
+    pass
+
+class TrueToken(BaseToken):
+    pass
+
+class FalseToken(BaseToken):
+    pass
+
+class NullToken(BaseToken):
+    pass
+
 class OrToken(BaseToken):
     pass
 
