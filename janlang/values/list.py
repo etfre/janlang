@@ -13,3 +13,6 @@ class List(base.BaseValue):
 
     def push(self, val):
         self._list.append(val)
+
+    def pop(self):
+        return self._list.pop()

@@ -35,7 +35,7 @@ class RuleLexer:
             'continue': tokens.Continue,
             'break': tokens.Break,
             'return': tokens.Return,
-            'fun': tokens.FunctionDef,
+            'def': tokens.FunctionDef,
             'var': tokens.VariableDeclaration,
             'mut': tokens.Mutable,
         }

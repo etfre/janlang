@@ -1,0 +1,8 @@
+var mut c = 10
+
+def add(a, b):
+    return a + b + c
+
+c = 100
+
+print(add(3, 5))

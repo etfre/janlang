@@ -1,32 +1,43 @@
-import execution_context
+import execution_context, environment
 
 class Function:
 
-    def __init__(self, name: str, parameters, defaults, action):
+    def __init__(self, name: str, parameters, defaults, body, closure, is_native_function):
         self.name = name
         self.parameters = parameters
         self.defaults = defaults
-        self.action = action 
+        self.body = body
+        self.closure = closure
+        self.is_native_function = is_native_function
 
-    def call(self, context: execution_context.ExecutionContext, arg_ast, kwarg_ast):
-        args = [arg.execute(context) for arg in arg_ast]
-        kwargs = {k: v.execute(context) for k, v in kwarg_ast.items()}
-        result = None
-        context.add_scope()
-        if isinstance(self.action, list):
-            for i, param in enumerate(self.parameters):
-               context.declare(param.name, 'parameter')
-               context.assign(param.name, args[i])
-            for statement in self.action:
-                try:
-                    statement.execute(context)
-                except Return as e:
-                    result = e.value
-                    break
-        else:
-            result = self.action(context, *args, **kwargs)
-        context.remove_scope()
-        return result
+    def call(self, interpreter, args, kwargs):
+        if self.is_native_function:
+            return self.body(*args, **kwargs)
+        env = environment.Environment(self.closure)
+        for arg, param in zip(args, self.parameters):
+            env.declare(param.name, 'parameter')
+            env.assign(param.name, arg)
+            print(arg, param, type(arg))
+        # result = None
+        try:
+            interpreter.execute_block(self.body, env)
+        except Return as ret:
+            return ret.value
+        # for 
+        #     interpreter.execute_block(self.body)
+        #     for i, param in enumerate(self.parameters):
+        #        context.declare(param.name, 'parameter')
+        #        context.assign(param.name, args[i])
+        #     for statement in self.body:
+        #         try:
+        #             statement.execute(context)
+        #         except Return as e:
+        #             result = e.value
+        #             break
+        # else:
+        #     result = self.body(context, *args, **kwargs)
+        # context.remove_scope()
+        # return result
 
 class Return(BaseException):
     

@@ -5,6 +5,8 @@ class Parser:
 
     def __init__(self, _tokens):
         self.tokens = _tokens
+        for tok in self.tokens:
+            print(tok)
         self.pos = 0
         self._hard_fail_on_error = False
         self.statement_parse_order = (
@@ -70,6 +72,7 @@ class Parser:
                 return parse_fn()
             except ParseError:
                 self.pos = start_pos
+        start_pos = self.pos
         self.error()
 
     def parse_function_definition(self):
@@ -147,7 +150,7 @@ class Parser:
         if not stmts:
             self.hard_error()
         self.require(tokens.Dedent)
-        return stmts
+        return ast.Block(stmts)
         
     
     def parse_operations(self, next_parse_fn, operator_tokens):

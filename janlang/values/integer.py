@@ -25,5 +25,14 @@ class Integer(base.BaseValue):
     def __lt__(self, other):
         return self._val < other._val
 
+    def __le__(self, other):
+        return self._val <= other._val
+
+    def __gt__(self, other):
+        return self._val > other._val
+
+    def __ge__(self, other):
+        return self._val >= other._val
+
     def __repr__(self) -> str:
         return str(self._val)

@@ -11,9 +11,9 @@ def main():
     args = arg_parser.parse_args()
     tokenizer = lexer.RuleLexer.from_path(args.main)
     tokens = list(tokenizer.tokenize())
-    tree = parser.Parser(tokens).parse_root()
-    print(ast_json.dumps(tree))
-    interpreter.Interpreter().execute(tree)
+    program = parser.Parser(tokens).parse_root()
+    print(ast_json.dumps(program))
+    interpreter.Interpreter().execute(program)
 
 if __name__ == '__main__':
     main()

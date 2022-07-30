@@ -1,5 +1,5 @@
-def _print(context, a):
-    print(a)
+def _print(*a):
+    print(*a)
 
 
 def open_file(path):

@@ -29,6 +29,15 @@ class Program(BaseActionNode):
     def typecheck(self, context):
         pass
 
+class Block(BaseActionNode):
+
+    def __init__(self, statements):
+        self.statements = statements
+
+    def execute(self, context):
+        for stmt in self.statements:
+            stmt.execute(context)
+
 class Module(BaseActionNode):
 
     def __init__(self, body):
@@ -56,32 +65,32 @@ class Whitespace(BaseActionNode):
 
 class Gt:
     
-    def evaluate(self, context, left, right):
+    def evaluate(self, left, right):
         return left > right
 
 class GtE:
     
-    def evaluate(self, context, left, right):
+    def evaluate(self, left, right):
         return left >= right
 
 class Lt:
 
-    def evaluate(self, context, left, right):
+    def evaluate(self, left, right):
         return left < right
 
 class LtE:
     
-    def evaluate(self, context, left, right):
+    def evaluate(self, left, right):
         return left <= right
 
 class Eq:
 
-    def evaluate(self, context, left, right):
+    def evaluate(self, left, right):
         return left == right
 
 class NotEq:
     
-    def evaluate(self, context, left, right):
+    def evaluate(self, left, right):
         return left != right
 
 class String(BaseActionNode):
@@ -149,21 +158,21 @@ class BinOp(BaseActionNode):
 
 class Add:
     
-    def evaluate(self, context, left, right):
-        return left.execute(context) + right.execute(context)
+    def evaluate(self, left, right):
+        return left + right
 
 class Subtract:
-    def evaluate(self, context, left, right):
-        return left.execute(context) - right.execute(context)
+    def evaluate(self, left, right):
+        return left - right
 
         
 class Multiply:
-    def evaluate(self, context, left, right):
-        return left.execute(context) * right.execute(context)
+    def evaluate(self, left, right):
+        return left * right
 
 class Divide:
-    def evaluate(self, context, left, right):
-        return left.execute(context) / right.execute(context)
+    def evaluate(self, left, right):
+        return left / right
 
 class Exponent(BaseActionNode):
 
@@ -341,6 +350,19 @@ class Name(BaseActionNode):
         return context.symbol_lookup(self.value).value
 
 class FunctionDefinition(BaseActionNode):
+
+    def __init__(self, name: str, parameters, defaults, body):
+        self.name = name
+        self.parameters = parameters
+        self.defaults = defaults
+        self.body = body
+
+    def execute(self, context: execution_context.ExecutionContext):
+        fn = function.Function(self.name, self.parameters, self.defaults, self.body)
+        context.declare(self.name, 'function')
+        context.assign(self.name, fn)
+    
+class ClassDefinition(BaseActionNode):
 
     def __init__(self, name: str, parameters, defaults, body):
         self.name = name

@@ -1,10 +1,10 @@
 class ExecutionContext:
 
     def __init__(self):
-        self._scopes = []
+        self.call_stack = []
 
     def symbol_lookup(self, name):
-        for scope in reversed(self._scopes):
+        for scope in reversed(self.call_stack):
             if name in scope.symbols:
                 symbol = scope.symbols[name]
                 return symbol
@@ -12,11 +12,11 @@ class ExecutionContext:
 
     def add_scope(self):
         scope = Scope()
-        self._scopes.append(scope)
+        self.call_stack.append(scope)
         return scope
 
     def remove_scope(self):
-        return self._scopes.pop()
+        return self.call_stack.pop()
 
     def assign(self, name, value):
         symbol = self.symbol_lookup(name)
@@ -26,7 +26,7 @@ class ExecutionContext:
         symbol.value_initialized = True
 
     def declare(self, name, type):
-        symbols = self._scopes[-1].symbols
+        symbols = self.call_stack[-1].symbols
         if name in symbols:
             raise RuntimeError('Cannot redeclare variable in the same scope')
         symbol = Symbol(name, type)
