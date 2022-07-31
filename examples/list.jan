@@ -1,3 +1,7 @@
 var l = [1,2,3]
 var i = 1
 print(l[i])
+if []:
+    print('bad truthy')
+if [1,2]:
+    print('good truthy')

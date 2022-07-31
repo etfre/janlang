@@ -1,4 +1,5 @@
 import contextlib
+from xmlrpc.client import Boolean
 import execution_context
 import native_functions
 import function
@@ -17,7 +18,10 @@ class Interpreter:
             ast.IfStatement: self.execute_if_statement,
             ast.Block: self.execute_block,
             ast.Name: self.execute_name,
+            ast.List: self.execute_list,
+            ast.Index: self.execute_index,
             ast.Integer: self.execute_integer,
+            ast.Float: self.execute_float,
             ast.TrueNode: self.execute_true,
             ast.FalseNode: self.execute_false,
             ast.Call: self.execute_call,
@@ -29,6 +33,7 @@ class Interpreter:
             ast.BreakStatement: self.execute_break_statement,
             ast.ContinueStatement: self.execute_continue_statement,
             ast.AssertStatement: self.execute_assert_statement,
+            ast.Not: self.execute_not,
         }
         self.environment = environment.Environment(parent=None)
         self.setup_globals()
@@ -45,6 +50,14 @@ class Interpreter:
     def execute_assert_statement(self, assert_statement: ast.AssertStatement):
         if not self.execute(assert_statement.test):
             raise errors.JanAssertionError()
+
+    def execute_list(self, list_: ast.List):
+        return values.List([self.execute(x) for x in list_.items])
+
+    def execute_index(self, idx: ast.Index):
+        index_of_value = self.execute(idx.index_of)
+        index = self.execute(idx.index)
+        return index_of_value[index]
 
     def execute_while_statement(self, while_statement: ast.WhileStatement):
         while self.execute(while_statement.test):
@@ -119,8 +132,11 @@ class Interpreter:
         return result
         # return function_to_call.call(context, self.args, self.kwargs)
 
-    def execute_integer(self, int_: ast.Integer) -> values.String:
+    def execute_integer(self, int_: ast.Integer) -> values.Integer:
         return values.Integer(int_.value)
+
+    def execute_float(self, float_: ast.Float) -> values.Float:
+        return values.Float(float_.value)
 
     def execute_true(self, node: ast.TrueNode) -> values.Boolean:
         return values.Boolean(True)
@@ -132,6 +148,10 @@ class Interpreter:
         test_result = self.execute(if_statement.test)
         if test_result:
             self.execute(if_statement.body)
+
+    def execute_not(self, not_expr: ast.Not):
+        expr_result = self.execute(not_expr.expr)
+        return Boolean(expr_result)
 
     def execute_function_definition(self, definition: ast.Block):
         fn = function.Function(definition.name, definition.parameters, definition.defaults, definition.body, self.environment, False)

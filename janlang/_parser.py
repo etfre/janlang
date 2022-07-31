@@ -1,3 +1,4 @@
+from iniconfig import ParseError
 import astree as ast
 import tokens
 
@@ -20,7 +21,7 @@ class Parser:
             self.parse_assert_statement,
             self.parse_assign_and_declaration_statement,
         )
-        self.atoms = (
+        self.primaries = (
             self.parse_name,
             self.parse_boolean,
             self.parse_string,
@@ -207,15 +208,23 @@ class Parser:
 
     def parse_multiplicative(self):
         op_tokens = (tokens.Star, tokens.Slash)
-        return self.binop_tree(self.parse_atom, op_tokens)
+        return self.binop_tree(self.parse_unary, op_tokens)
 
     def parse_unary(self):
-        pass
+        try:
+            tok = self.expect((tokens.Not,))
+        except ParseError:
+            return self.parse_primary()
+        expr = self.parse_unary()
+        if isinstance(tok, tokens.Not):
+            return ast.Not(expr)
+        raise NotImplementedError
+        
 
-    def parse_atom(self):
+    def parse_primary(self):
         start_pos = self.pos
         node = None
-        for fn in self.atoms:
+        for fn in self.primaries:
             try:
                 node = fn()
             except ParseError:
@@ -226,13 +235,13 @@ class Parser:
             self.error()
         chain_functions = (self.finish_call, self.finish_attribute, self.finish_index)
         while True:
-            next_node = self.chain_atom(node, chain_functions)
+            next_node = self.chain_primary(node, chain_functions)
             if not next_node:
                 break
             node = next_node
         return node
 
-    def chain_atom(self, root, chain_functions):
+    def chain_primary(self, root, chain_functions):
         next_node = None
         start_pos = self.pos
         for fn in chain_functions:

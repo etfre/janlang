@@ -3,16 +3,13 @@ from values import base
 
 class List(base.BaseValue):
     def __init__(self, l) -> None:
-        self._list = l
+        super().__init__(l)
 
     def __repr__(self) -> str:
-        return str(self._list)
-
-    def __getitem__(self, i):
-        return self._list[i._val]
+        return str(self.proxy)
 
     def push(self, val):
-        self._list.append(val)
+        self.proxy.append(val)
 
     def pop(self):
-        return self._list.pop()
+        return self.proxy.pop()

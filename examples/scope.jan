@@ -1,10 +1,10 @@
 var a = "global a"
 var b = "global b"
 var c = "global c"
-if 1:
+if true:
     var a = "outer a"
     var b = "outer b"
-    if 1:
+    if true:
         var a = "inner a"
         print(a)
         print(b)

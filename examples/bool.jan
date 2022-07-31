@@ -2,5 +2,9 @@ if true:
     print("true")
 if false:
     print("false")
+if 1:
+    print('1')
+if 0:
+    print('0')
 
 assert true

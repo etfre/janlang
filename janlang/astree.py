@@ -131,6 +131,10 @@ class Float(BaseNode):
     def execute(self, context):
         return values.Float(self.value)
 
+class Not(BaseNode):
+    def __init__(self, expr):
+        self.expr = expr
+
 class UnaryOp(BaseNode):
 
     def __init__(self, operation, operand):

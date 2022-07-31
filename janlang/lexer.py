@@ -41,6 +41,7 @@ class RuleLexer:
             'true': tokens.TrueToken,
             'false': tokens.FalseToken,
             'null': tokens.NullToken,
+            'not': tokens.Not,
             'assert': tokens.Assert,
         }
         self.text = text

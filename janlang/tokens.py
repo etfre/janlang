@@ -43,6 +43,9 @@ class LtE(BaseToken):
 class Eq(BaseToken):
     pass
 
+class Not(BaseToken):
+    pass
+
 class NotEq(BaseToken):
     pass
 
