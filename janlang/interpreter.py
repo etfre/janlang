@@ -6,8 +6,8 @@ import function
 import astree as ast
 import environment, values, errors
 
-class Interpreter:
 
+class Interpreter:
     def __init__(self):
         self.execute_map = {
             ast.Program: self.execute_program,
@@ -29,6 +29,7 @@ class Interpreter:
             ast.Return: self.execute_return,
             ast.BinOp: self.execute_bin_op,
             ast.Compare: self.execute_compare,
+            ast.ForStatement: self.execute_for_statement,
             ast.WhileStatement: self.execute_while_statement,
             ast.BreakStatement: self.execute_break_statement,
             ast.ContinueStatement: self.execute_continue_statement,
@@ -37,7 +38,6 @@ class Interpreter:
         }
         self.environment = environment.Environment(parent=None)
         self.setup_globals()
-
 
     def execute(self, node):
         fn = self.execute_map[type(node)]
@@ -68,16 +68,34 @@ class Interpreter:
             except Break:
                 return
 
+    def execute_for_statement(self, for_statement: ast.ForStatement):
+        iter_obj = self.execute(for_statement.iter)
+        for obj in iter_obj:
+            env = environment.Environment(self.environment)
+            if isinstance(for_statement.left, ast.VariableDeclaration):
+                decl_type = "variable" if for_statement.left.is_mutable else "immutable_variable"
+                name = for_statement.left.name
+                env.declare(name.value, decl_type)
+            else:
+                name = for_statement.left
+            assert isinstance(name, ast.Name)
+            env.assign(name.value, obj)
+            try:
+                self.execute_block(for_statement.body, env)
+            except Continue:
+                pass
+            except Break:
+                return
+
     def execute_break_statement(self, break_statement: ast.BreakStatement):
         raise Break()
 
     def execute_continue_statement(self, continue_statement: ast.ContinueStatement):
         raise Continue()
 
-
     def execute_variable_declaration(self, vardec: ast.VariableDeclaration):
         name = vardec.name.value
-        decl_type = 'variable' if vardec.is_mutable else 'immutable_variable'
+        decl_type = "variable" if vardec.is_mutable else "immutable_variable"
         self.environment.declare(name, decl_type)
 
     def execute_assignment(self, assgn: ast.Assignment):
@@ -107,7 +125,7 @@ class Interpreter:
     def execute_call(self, call: ast.Call) -> values.String:
         function_to_call = self.execute(call.fn)
         if not isinstance(function_to_call, function.Function):
-            raise RuntimeError(f'Trying to call a function, but got {function_to_call}')
+            raise RuntimeError(f"Trying to call a function, but got {function_to_call}")
         args = [self.execute(arg) for arg in call.args]
         kwargs = {k: self.execute(v) for k, v in call.kwargs.items()}
         # env = environment.Environment(self.closure)
@@ -118,8 +136,8 @@ class Interpreter:
         # context.add_scope()
         if isinstance(self.action, list):
             for i, param in enumerate(self.parameters):
-               context.declare(param.name, 'parameter')
-               context.assign(param.name, args[i])
+                context.declare(param.name, "parameter")
+                context.assign(param.name, args[i])
             for statement in self.action:
                 try:
                     statement.execute(context)
@@ -154,8 +172,15 @@ class Interpreter:
         return Boolean(expr_result)
 
     def execute_function_definition(self, definition: ast.Block):
-        fn = function.Function(definition.name, definition.parameters, definition.defaults, definition.body, self.environment, False)
-        self.environment.declare(definition.name, 'function')
+        fn = function.Function(
+            definition.name,
+            definition.parameters,
+            definition.defaults,
+            definition.body,
+            self.environment,
+            False,
+        )
+        self.environment.declare(definition.name, "function")
         self.environment.assign(definition.name, fn)
 
     def execute_block(self, block: ast.Block, env=None):
@@ -183,11 +208,13 @@ class Interpreter:
         is_native_function = True
         for name, native_fn in native_functions.FUNCTIONS.items():
             fn = function.Function(name, [], [], native_fn, closure, is_native_function)
-            self.environment.declare(name, 'native_function')
+            self.environment.declare(name, "native_function")
             self.environment.assign(name, fn)
+
 
 class Continue(BaseException):
     pass
+
 
 class Break(BaseException):
     pass

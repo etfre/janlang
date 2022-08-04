@@ -324,8 +324,8 @@ class WhileStatement(BaseNode):
 
 class ForStatement(BaseNode):
 
-    def __init__(self, name, iter, body):
-        self.name = name
+    def __init__(self, left, iter, body):
+        self.left = left
         self.iter = iter
         self.body = body
 

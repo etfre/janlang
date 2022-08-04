@@ -14,7 +14,7 @@ class Environment:
         self.values[name] = symbol
         return symbol
 
-    def assign(self, name, value: base.BaseValue) -> Symbol:
+    def assign(self, name: str, value: base.BaseValue) -> Symbol:
         assert value is not None
         symbol = self.get(name)
         if symbol.type == "immutable_variable" and symbol.value_initialized:
@@ -23,7 +23,7 @@ class Environment:
         symbol.value_initialized = True
         return symbol
         
-    def get(self, name) -> Symbol:
+    def get(self, name: str) -> Symbol:
         if name not in self.values:
             if self.parent is None:
                 raise RuntimeError(f'{name} not in environment')

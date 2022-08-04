@@ -15,6 +15,7 @@ class Parser:
             self.parse_return_statement,
             self.parse_if_statement,
             self.parse_while_statement,
+            self.parse_for_statement,
             self.parse_continue_statement,
             self.parse_break_statement,
             self.parse_simple_statement,
@@ -90,6 +91,15 @@ class Parser:
     
         return ast.FunctionDefinition(name, params, [], body)
 
+    def parse_name_and_maybe_declaration(self):
+        decl = self.match(tokens.VariableDeclaration)
+        if not decl:
+            return self.parse_name()
+        mut = self.match(tokens.Mutable)
+        is_mutable = bool(mut)
+        name = self.parse_name()
+        return ast.VariableDeclaration(name, is_mutable)
+
     def parse_assign_and_declaration_statement(self):
         result = []
         decl = self.match(tokens.VariableDeclaration)
@@ -125,7 +135,7 @@ class Parser:
 
     def parse_for_statement(self):
         self.expect(tokens.For)
-        name = self.parse_name()
+        name = self.parse_name_and_maybe_declaration()
         self.require(tokens.In)
         iter = self.parse_expression()
         self.require(tokens.Colon)

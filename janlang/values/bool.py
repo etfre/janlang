@@ -8,5 +8,5 @@ class Boolean(base.BaseValue):
         super().__init__(val)
 
     def __repr__(self) -> str:
-        return str(self._val)
+        return str(self.proxy)
     
