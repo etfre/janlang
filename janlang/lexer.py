@@ -47,14 +47,18 @@ class RuleLexer:
         self.text = text
         self.pos = 0
         self.indentation_level = 0
+        self.line = 1
         self.at_start_of_line = True
 
     def read_newline(self):
-        self.at_start_of_line = True
         self.advance()
         return tokens.NL()
 
-    def read_whitespace(self, matched_text):
+    def read_whitespace(self):
+        matched_text = ''
+        while self.peek() == ' ':
+            matched_text += ' '
+            self.advance()
         return tokens.Whitespace(matched_text)
 
     def read_next_token(self):
@@ -68,22 +72,37 @@ class RuleLexer:
         raise RuntimeError(f'Cannot tokenize text: {self.text[self.pos:]}')
 
     def read_start_of_line(self):
+        self.at_start_of_line = False
         spaces = 0
-        while self.text[self.pos] == ' ':
+        start = self.pos
+        curr = self.peek()
+        while curr == ' ':
             spaces += 1
-            self.pos += 1
-        indents, remainder = divmod(spaces, 4)
-        level_change = indents - self.indentation_level
+            curr = self.text[start + spaces]
+        is_empty_line = curr == '\n'
+        if is_empty_line:
+            whitespace_to_yield = spaces
+            level_change = 0
+        else:
+            indents, remainder = divmod(spaces, 4)
+            assert not remainder
+            level_change = indents - self.indentation_level
+            whitespace_to_yield = spaces - abs(level_change)*4
+        if whitespace_to_yield:
+            for _ in range(whitespace_to_yield):
+                self.advance()
+            yield tokens.Whitespace(' ' * whitespace_to_yield)
         if level_change == 1:
+            self.pos += 4
             yield tokens.Indent()
         elif level_change > 1:
             raise RuntimeError('Indent cant be > 1')
         else:
             for i in range(0, level_change, -1):
+                self.pos += 4
                 yield tokens.Dedent()
         self.indentation_level += level_change
         assert self.indentation_level >= 0
-        self.at_start_of_line = False
 
     @property
     def is_at_end(self):
@@ -139,8 +158,19 @@ class RuleLexer:
                 self.error()
         return tokens.String(val)
 
-
     def tokenize(self):
+        for i, c in enumerate(self.text):
+            print(i, c)
+        pos = self.pos
+        for tok in self._tokenize():
+            source = (self.text[pos:self.pos], self.line)
+            tok.source = source
+            print(tok, tok.source)
+            pos = self.pos
+            if not isinstance(tok, tokens.Whitespace):
+                yield tok
+
+    def _tokenize(self):
         while not self.is_at_end:
             if self.at_start_of_line:
                 yield from self.read_start_of_line()
@@ -150,9 +180,11 @@ class RuleLexer:
                 continue
             if ch == '\n':
                 yield self.read_newline()
+                self.at_start_of_line = True
+                self.line += 1
                 continue
             if ch == ' ':
-                self.advance()
+                yield self.read_whitespace() # yield so tokenize can keep track of position
                 continue
             if ch.isalpha() or ch == '_':
                 yield self.read_keyword_or_name()

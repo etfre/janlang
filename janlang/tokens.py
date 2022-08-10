@@ -4,11 +4,13 @@ import ast
 class BaseToken:
     
     def __init__(self, *args, **kwargs):
+        self.source = None
         pass
 
 class Name(BaseToken):
     
     def __init__(self, value):
+        super().__init__()
         self.value = value
 
 class Assert(BaseToken):
@@ -112,6 +114,7 @@ class Dedent(BaseToken):
     pass
 class Name(BaseToken):
     def __init__(self, value):
+        super().__init__()
         self.value = value
 
 class If(BaseToken):
@@ -144,15 +147,10 @@ class Mutable(BaseToken):
 class Period(BaseToken):
     pass
 
-class RepetitionToken(BaseToken):
-
-    def __init__(self, low=0, high=None):
-        self.low = low
-        self.high = high
-
 class EOF(BaseToken):
     pass
 
 class String(BaseToken):
     def __init__(self, val):
+        super().__init__()
         self.val = val

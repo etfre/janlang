@@ -6,8 +6,6 @@ class Parser:
 
     def __init__(self, _tokens):
         self.tokens = _tokens
-        for tok in self.tokens:
-            print(tok)
         self.pos = 0
         self._hard_fail_on_error = False
         self.statement_parse_order = (

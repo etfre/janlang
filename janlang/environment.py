@@ -3,7 +3,7 @@ from values import base
 
 class Environment:
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: Environment | None) -> None:
         self.values = {}
         self.parent = parent
 
