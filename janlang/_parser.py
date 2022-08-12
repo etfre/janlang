@@ -16,9 +16,9 @@ class Parser:
             self.parse_for_statement,
             self.parse_continue_statement,
             self.parse_break_statement,
-            self.parse_simple_statement,
             self.parse_assert_statement,
             self.parse_assign_and_declaration_statement,
+            self.parse_simple_statement, # last
         )
         self.primaries = (
             self.parse_name,
@@ -61,6 +61,8 @@ class Parser:
             if isinstance(self.peek(), (tokens.EOF, tokens.Dedent)):
                 break
             result = self.parse_statement()
+            if result is None:
+                break
             if isinstance(result, (list, tuple)):
                 stmts.extend(result)
             else:
@@ -68,6 +70,9 @@ class Parser:
         return stmts
 
     def parse_statement(self):
+        '''
+        expecting a valid statement here, so hard error if everything errors
+        '''
         start_pos = self.pos
         for parse_fn in self.statement_parse_order:
             try:
@@ -75,7 +80,7 @@ class Parser:
             except ParseError:
                 self.pos = start_pos
         start_pos = self.pos
-        self.error()
+        self.hard_error()
 
     def parse_function_definition(self):
         self.expect(tokens.FunctionDef)
@@ -197,7 +202,7 @@ class Parser:
 
     def parse_simple_statement(self):
         result = self.parse_expression()
-        self.expect(tokens.NL)
+        self.require(tokens.NL)
         return result
         
     def parse_expression(self):
@@ -402,7 +407,8 @@ class Parser:
 
     def _error(self, msg, error_class):
         tok = self.peek()
-        error_msg = f'Got an error at token {self.pos}, {tok}'
+        text, line = tok.source
+        error_msg = f'Got an error at line {line}, "{text}" {tok}'
         if msg:
             error_msg += f'\n{msg}'
         raise error_class(error_msg)

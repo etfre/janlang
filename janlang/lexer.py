@@ -25,7 +25,7 @@ class RuleLexer:
             (r'(\d*\.\d+|\d+\.\d*)', tokens.Float),
             (r'\d+', tokens.Int),
             (':', tokens.Colon),
-            ('.', tokens.Period),
+            (r'\.', tokens.Period),
         ))
         self.keywords = {
             'if': tokens.If,

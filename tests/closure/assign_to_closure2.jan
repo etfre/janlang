@@ -3,6 +3,7 @@ var mut g
 
 if true:
     var mut local = "local"
+
     def ff():
         print(local)
         local = "after f"
