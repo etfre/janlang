@@ -27,6 +27,7 @@ class Parser:
             self.parse_int,
             self.parse_float,
             self.parse_list,
+            self.parse_dictionary,
         )
         self.comparison_tokens = {
             tokens.Eq: ast.Eq, 
@@ -111,6 +112,10 @@ class Parser:
             is_mutable = bool(mut)
             name = self.parse_name()
             result.append(ast.VariableDeclaration(name, is_mutable))
+            if self.match(tokens.Assign):
+                right = self.parse_expression()
+                result.append(ast.Assignment(name, right))
+            return
         else:
             name = self.parse_name()
         if self.match(tokens.Assign):
@@ -322,8 +327,14 @@ class Parser:
     def parse_list(self):
         tok = self.expect(tokens.OpenBracket)
         list_vals = self.parse_listvals()
-        tok = self.expect(tokens.CloseBracket)
+        tok = self.require(tokens.CloseBracket)
         return ast.List(list_vals)
+
+    def parse_dictionary(self):
+        tok = self.expect(tokens.OpenBrace)
+        vals = self.parse_dictionary_vals()
+        tok = self.require(tokens.CloseBrace)
+        return ast.Dictionary(vals)
 
     def parse_string(self):
         tok = self.expect(tokens.String)
@@ -345,6 +356,27 @@ class Parser:
         self.pos = pos
         return vals
         
+
+    def parse_dictionary_vals(self):
+        # (expr ':' expr (',' expr ':' expr)*)*
+        start = self.pos
+        vals = []
+        # pos = self.pos
+        # while True:
+        #     try:
+        #         key = self.parse_expression()
+        #         self.require(tokens.Colon)
+        #         try:
+        #             val = self.parse_expression()
+        #         except ParseError:
+        #             self.hard_error()
+        #     except ParseError:
+        #         break
+        #     pos = self.pos
+        #     self.expect(tokens.Comma)
+        #     pos = self.pos
+        # self.pos = pos
+        return vals
 
     def parse_listvals(self):
         # (expr (',' expr)*)*

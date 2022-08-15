@@ -19,6 +19,7 @@ class Interpreter:
             ast.Block: self.execute_block,
             ast.Name: self.execute_name,
             ast.List: self.execute_list,
+            ast.Dictionary: self.execute_dictionary,
             ast.Index: self.execute_index,
             ast.Integer: self.execute_integer,
             ast.Float: self.execute_float,
@@ -53,6 +54,10 @@ class Interpreter:
 
     def execute_list(self, list_: ast.List):
         return values.List([self.execute(x) for x in list_.items])
+
+    def execute_dictionary(self, dict_: ast.Dictionary):
+        py_dict = {}
+        return values.Dictionary(py_dict)
 
     def execute_index(self, idx: ast.Index):
         index_of_value = self.execute(idx.index_of)

@@ -10,6 +10,8 @@ class RuleLexer:
             (r'\)', tokens.CloseParen),
             (r'\[', tokens.OpenBracket),
             (r'\]', tokens.CloseBracket),
+            (r'\{', tokens.OpenBrace),
+            (r'\}', tokens.CloseBrace),
             (r',', tokens.Comma),
             (r'==', tokens.Eq),
             (r'!=', tokens.NotEq),

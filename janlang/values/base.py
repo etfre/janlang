@@ -9,6 +9,7 @@ def create_type_maps():
         int: values.Integer,
         float: values.Float,
         list: values.List,
+        dict: values.Dictionary,
     }
     m2 = {v: k for k, v in m1.items()}
     return m1, m2

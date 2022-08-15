@@ -231,6 +231,11 @@ class List(BaseNode):
     def execute(self, context):
         return values.List([x.execute(context) for x in self.items])
 
+class Dictionary(BaseNode):
+
+    def __init__(self, kv_pairs):
+        self.kv_pairs = kv_pairs
+
 class Attribute(BaseNode):
 
     def __init__(self, attribute_of, name):
@@ -299,12 +304,6 @@ class Assignment(BaseNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
-
-    def execute(self, context: execution_context.ExecutionContext):
-        name_string = self.left.value
-        symbol = context.symbol_lookup(name_string)
-        value = self.right.execute(context)
-        context.assign(name_string, value)
 
 class WhileStatement(BaseNode):
 

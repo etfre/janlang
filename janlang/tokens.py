@@ -72,6 +72,12 @@ class Slash(BaseToken):
 class Dot(BaseToken):
     pass
 
+class OpenBrace(BaseToken):
+    pass
+
+class CloseBrace(BaseToken):
+    pass
+
 class OpenBracket(BaseToken):
     pass
 
