@@ -7,6 +7,10 @@ class Environment:
         self.values = {}
         self.parent = parent
 
+    @property
+    def is_root(self):
+        return self.parent is None
+
     def declare(self, name: str, type_) -> Symbol:
         if name in self.values:
             raise RuntimeError(f'{name} already declared in this scope')
@@ -29,6 +33,19 @@ class Environment:
                 raise RuntimeError(f'{name} not in environment')
             return self.parent.get(name)
         return self.values[name]
+
+    def deep_copy(self):
+        if self.is_root:
+            return self
+        copied_parent = self.parent.deep_copy()
+        copied = Environment(copied_parent)
+        copied.values = self.values.copy()
+        return copied
+
+    def add_child(self):
+        parent = self.deep_copy()
+        new_env = Environment(parent)
+        return new_env
 
 class Symbol:
 

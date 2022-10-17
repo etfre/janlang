@@ -11,10 +11,6 @@ def main():
     args = arg_parser.parse_args()
     tokenizer = lexer.RuleLexer.from_path(args.main)
     tokens = list(tokenizer.tokenize())
-    with open(args.main) as f:
-        src = f.read()
-    for tok in tokens:
-        pass
     program = parser.Parser(tokens).parse_root()
     print(ast_json.dumps(program))
     interpreter.Interpreter().execute(program)

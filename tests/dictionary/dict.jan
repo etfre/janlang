@@ -1,2 +1,4 @@
 var d = {}
+d['a'] = 3
+assert d['a'] == 3
 print(d)

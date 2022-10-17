@@ -1,3 +1,4 @@
+from __future__ import annotations
 import operator
 
 
@@ -8,6 +9,7 @@ def create_type_maps():
         bool: values.Boolean,
         int: values.Integer,
         float: values.Float,
+        str: values.String,
         list: values.List,
         dict: values.Dictionary,
     }
@@ -33,45 +35,53 @@ class BaseValue:
                 assert map_python_to_jan_types[type(proxy)] is type(self)
         self.proxy = proxy
 
-    def __add__(self, other):
+    def __add__(self, other: BaseValue):
         return binary_op(self, other, operator.add)
 
-    def __sub__(self, other):
+    def __sub__(self, other: BaseValue):
         return binary_op(self, other, operator.sub)
 
-    def __mul__(self, other):
+    def __mul__(self, other: BaseValue):
         return binary_op(self, other, operator.mul)
 
-    def __div__(self, other):
+    def __div__(self, other: BaseValue):
         return binary_op(self, other, operator.div)
 
-    def __eq__(self, other):
+    def __eq__(self, other: BaseValue):
         return binary_op(self, other, operator.eq)
 
-    def __ne__(self, other):
+    def __ne__(self, other: BaseValue):
         return binary_op(self, other, operator.ne)
 
-    def __lt__(self, other):
+    def __lt__(self, other: BaseValue):
         return binary_op(self, other, operator.lt)
 
-    def __le__(self, other):
+    def __le__(self, other: BaseValue):
         return binary_op(self, other, operator.le)
 
-    def __gt__(self, other):
+    def __gt__(self, other: BaseValue):
         return binary_op(self, other, operator.gt)
 
-    def __ge__(self, other):
+    def __ge__(self, other: BaseValue):
         return binary_op(self, other, operator.ge)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: BaseValue):
         obj = self.proxy[get_python_obj(i)]
         return obj
+
+    def __setitem__(self, i: BaseValue, v: BaseValue):
+        self.proxy[get_python_obj(i)] = v
 
     def __bool__(self):
         if not isinstance(self.proxy, NoProxy):
             py_bool = bool(get_python_obj(self))
             return py_bool
         raise NotImplementedError
+
+    def __repr__(self):
+        if not isinstance(self.proxy, NoProxy):
+            return f'{repr(self.proxy)} - {super().__repr__()}'
+        return super().__repr__()
 
     def __iter__(self):
         if not isinstance(self.proxy, NoProxy):
@@ -89,7 +99,7 @@ def jan_object_from_python(py_obj):
     return map_python_to_jan_types[type(py_obj)](py_obj)
 
 
-def binary_op(obj: BaseValue, other, op):
+def binary_op(obj: BaseValue, other: BaseValue, op):
     if not isinstance(obj.proxy, NoProxy):
         left = get_python_obj(obj)
         right = get_python_obj(other)

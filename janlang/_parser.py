@@ -17,7 +17,9 @@ class Parser:
             self.parse_continue_statement,
             self.parse_break_statement,
             self.parse_assert_statement,
-            self.parse_assign_and_declaration_statement,
+            # self.parse_assign_and_declaration_statement,
+            self.parse_declaration_statement,
+            self.parse_assign_statement,
             self.parse_simple_statement, # last
         )
         self.primaries = (
@@ -61,6 +63,7 @@ class Parser:
             self.expect_greedy(tokens.NL, min_to_pass=0)
             if isinstance(self.peek(), (tokens.EOF, tokens.Dedent)):
                 break
+
             result = self.parse_statement()
             if result is None:
                 break
@@ -104,26 +107,28 @@ class Parser:
         name = self.parse_name()
         return ast.VariableDeclaration(name, is_mutable)
 
-    def parse_assign_and_declaration_statement(self):
-        result = []
+    def parse_declaration_statement(self):
         decl = self.match(tokens.VariableDeclaration)
-        if decl:
-            mut = self.match(tokens.Mutable)
-            is_mutable = bool(mut)
-            name = self.parse_name()
-            result.append(ast.VariableDeclaration(name, is_mutable))
-            if self.match(tokens.Assign):
-                right = self.parse_expression()
-                result.append(ast.Assignment(name, right))
-            return
-        else:
-            name = self.parse_name()
-        if self.match(tokens.Assign):
-            right = self.parse_expression()
-            result.append(ast.Assignment(name, right))
-        elif not decl:
+        if not decl:
             self.error()
-        return result
+        mut = self.match(tokens.Mutable)
+        is_mutable = bool(mut)
+        name = self.parse_name()
+        if not name:
+            self.hard_error()
+        # if also assigning to a variable decrement pos by one for parse_assign_statement
+        if isinstance(self.peek(), tokens.Assign):
+            self.retreat()
+        return ast.VariableDeclaration(name, is_mutable)
+
+    def parse_assign_statement(self):
+        left = self.parse_primary()
+        if not self.match(tokens.Assign):
+            self.error()
+        if not isinstance(left, (ast.Name, ast.Index)):
+            self.hard_error()
+        right = self.parse_expression()
+        return ast.Assignment(left, right)
 
     def parse_if_statement(self):
         self.expect(tokens.If)
@@ -253,13 +258,13 @@ class Parser:
             self.error()
         chain_functions = (self.finish_call, self.finish_attribute, self.finish_index)
         while True:
-            next_node = self.chain_primary(node, chain_functions)
+            next_node = self.make_chain(node, chain_functions)
             if not next_node:
                 break
             node = next_node
         return node
 
-    def chain_primary(self, root, chain_functions):
+    def make_chain(self, root, chain_functions):
         next_node = None
         start_pos = self.pos
         for fn in chain_functions:
@@ -311,11 +316,7 @@ class Parser:
             return ast.TrueNode()
         else:
             return ast.FalseNode()
-
-    def parse_name(self):
-        tok = self.expect(tokens.Name)
-        return ast.Name(tok.value)
-
+            
     def parse_float(self):
         tok = self.expect(tokens.Float)
         return ast.Float(tok.val)
@@ -334,7 +335,8 @@ class Parser:
         tok = self.expect(tokens.OpenBrace)
         vals = self.parse_dictionary_vals()
         tok = self.require(tokens.CloseBrace)
-        return ast.Dictionary(vals)
+        d =  ast.Dictionary(vals)
+        return d
 
     def parse_string(self):
         tok = self.expect(tokens.String)
@@ -430,6 +432,10 @@ class Parser:
         curr = self.tokens[self.pos]
         self.pos += 1
         return curr
+
+    def retreat(self):
+        self.pos -= 1
+        assert self.pos >= 0
 
     def peek(self):
         try:

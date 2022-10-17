@@ -30,21 +30,21 @@ class RuleLexer:
             (r'\.', tokens.Period),
         ))
         self.keywords = {
-            'if': tokens.If,
-            'while': tokens.While,
-            'for': tokens.For,
-            'in': tokens.In,
-            'continue': tokens.Continue,
-            'break': tokens.Break,
-            'return': tokens.Return,
-            'def': tokens.FunctionDef,
-            'var': tokens.VariableDeclaration,
-            'mut': tokens.Mutable,
-            'true': tokens.TrueToken,
-            'false': tokens.FalseToken,
-            'null': tokens.NullToken,
-            'not': tokens.Not,
             'assert': tokens.Assert,
+            'break': tokens.Break,
+            'continue': tokens.Continue,
+            'def': tokens.FunctionDef,
+            'false': tokens.FalseToken,
+            'for': tokens.For,
+            'if': tokens.If,
+            'in': tokens.In,
+            'mut': tokens.Mutable,
+            'not': tokens.Not,
+            'null': tokens.NullToken,
+            'return': tokens.Return,
+            'true': tokens.TrueToken,
+            'var': tokens.VariableDeclaration,
+            'while': tokens.While,
         }
         self.text = text
         self.pos = 0
@@ -90,7 +90,7 @@ class RuleLexer:
             assert not remainder
             level_change = indents - self.indentation_level
             whitespace_to_yield = spaces - abs(level_change)*4
-        if whitespace_to_yield:
+        if whitespace_to_yield > 0:
             for _ in range(whitespace_to_yield):
                 self.advance()
             yield tokens.Whitespace(' ' * whitespace_to_yield)
@@ -101,7 +101,6 @@ class RuleLexer:
             raise RuntimeError('Indent cant be > 1')
         else:
             for i in range(0, level_change, -1):
-                self.pos += 4
                 yield tokens.Dedent()
         self.indentation_level += level_change
         assert self.indentation_level >= 0
@@ -161,13 +160,11 @@ class RuleLexer:
         return tokens.String(val)
 
     def tokenize(self):
-        for i, c in enumerate(self.text):
-            print(i, c)
         pos = self.pos
         for tok in self._tokenize():
             source = (self.text[pos:self.pos], self.line)
+            # print(tok, source)
             tok.source = source
-            print(tok, tok.source)
             pos = self.pos
             if not isinstance(tok, tokens.Whitespace):
                 yield tok

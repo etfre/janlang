@@ -7,12 +7,6 @@ class BaseToken:
         self.source = None
         pass
 
-class Name(BaseToken):
-    
-    def __init__(self, value):
-        super().__init__()
-        self.value = value
-
 class Assert(BaseToken):
     pass
 
@@ -122,6 +116,9 @@ class Name(BaseToken):
     def __init__(self, value):
         super().__init__()
         self.value = value
+    def __repr__(self) -> str:
+        return f'{self.value} - {super().__repr__()}'
+
 
 class If(BaseToken):
     pass

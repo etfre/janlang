@@ -1,0 +1,9 @@
+var f
+
+def foo(param):
+    def f_():
+        assert param == "param"
+    f = f_
+foo("param")
+
+f()

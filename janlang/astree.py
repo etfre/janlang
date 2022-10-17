@@ -1,3 +1,4 @@
+from __future__ import annotations
 import types
 import re
 import json
@@ -6,6 +7,7 @@ import execution_context
 import interpreter
 import interpreter
 import function
+from values.base import BaseValue
 import values
 
 
@@ -33,10 +35,6 @@ class Block(BaseNode):
 
     def __init__(self, statements):
         self.statements = statements
-
-    def execute(self, context):
-        for stmt in self.statements:
-            stmt.execute(context)
 
 class Module(BaseNode):
 
@@ -128,12 +126,9 @@ class Float(BaseNode):
     def __init__(self, value: float):
         self.value = float(value)
 
-    def execute(self, context):
-        return values.Float(self.value)
-
 class Not(BaseNode):
     def __init__(self, expr):
-        self.expr = expr
+        self.expr: BaseValue = expr
 
 class UnaryOp(BaseNode):
 
@@ -254,11 +249,6 @@ class Index(BaseNode):
     def __init__(self, index_of, index):
         self.index_of = index_of
         self.index = index
-
-    def execute(self, context):
-        index_of_value = self.index_of.execute(context)
-        index = self.index.execute(context)
-        return index_of_value[index]
 
 class Slice(BaseNode):
 

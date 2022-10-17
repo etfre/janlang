@@ -7,13 +7,13 @@ class Function:
         self.parameters = parameters
         self.defaults = defaults
         self.body = body
-        self.closure = closure
+        self.closure: environment.Environment = closure
         self.is_native_function = is_native_function
 
     def call(self, interpreter, args, kwargs):
         if self.is_native_function:
             return self.body(*args, **kwargs)
-        env = environment.Environment(self.closure)
+        env = self.closure.add_child()
         for arg, param in zip(args, self.parameters):
             env.declare(param.name, 'parameter')
             env.assign(param.name, arg)

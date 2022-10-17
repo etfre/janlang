@@ -50,6 +50,7 @@ class Interpreter:
 
     def execute_assert_statement(self, assert_statement: ast.AssertStatement):
         if not self.execute(assert_statement.test):
+            print('raising assert')
             raise errors.JanAssertionError()
 
     def execute_list(self, list_: ast.List):
@@ -76,7 +77,7 @@ class Interpreter:
     def execute_for_statement(self, for_statement: ast.ForStatement):
         iter_obj = self.execute(for_statement.iter)
         for obj in iter_obj:
-            env = environment.Environment(self.environment)
+            env = self.environment.add_child()
             if isinstance(for_statement.left, ast.VariableDeclaration):
                 decl_type = "variable" if for_statement.left.is_mutable else "immutable_variable"
                 name = for_statement.left.name
@@ -104,10 +105,22 @@ class Interpreter:
         self.environment.declare(name, decl_type)
 
     def execute_assignment(self, assgn: ast.Assignment):
-        name_string = assgn.left.value
-        symbol = self.environment.get(name_string)
-        value = self.execute(assgn.right)
-        self.environment.assign(name_string, value)
+        left = assgn.left
+        if isinstance(left, ast.Name):
+            name_string = assgn.left.value
+            symbol = self.environment.get(name_string)
+            value = self.execute(assgn.right)
+            self.environment.assign(name_string, value)
+        elif isinstance(left, ast.Index):
+            index_of_value = self.execute(left.index_of)
+            index_value = self.execute(left.index)
+            index_of_value[index_value] = self.execute(assgn.right)
+        elif isinstance(left, ast.Attribute):
+            attribute_of_value = self.execute(left.attribute_of)
+            attribute_name = self.execute(left.name)
+            attribute_of_value[attribute_name] = self.execute(assgn.right)
+        else:
+            raise RuntimeError()
 
     def execute_name(self, name: ast.Name):
         return self.environment.get(name.value).value
@@ -135,26 +148,7 @@ class Interpreter:
         kwargs = {k: self.execute(v) for k, v in call.kwargs.items()}
         # env = environment.Environment(self.closure)
         return function_to_call.call(self, args, kwargs)
-        args = [self.execute(arg) for arg in call.args]
-        kwargs = {k: self.execute(v) for k, v in call.kwargs.items()}
-        result = None
-        # context.add_scope()
-        if isinstance(self.action, list):
-            for i, param in enumerate(self.parameters):
-                context.declare(param.name, "parameter")
-                context.assign(param.name, args[i])
-            for statement in self.action:
-                try:
-                    statement.execute(context)
-                except Return as e:
-                    result = e.value
-                    break
-        else:
-            result = self.action(context, *args, **kwargs)
-        context.remove_scope()
-        return result
-        # return function_to_call.call(context, self.args, self.kwargs)
-
+       
     def execute_integer(self, int_: ast.Integer) -> values.Integer:
         return values.Integer(int_.value)
 
@@ -167,7 +161,7 @@ class Interpreter:
     def execute_false(self, node: ast.FalseNode) -> values.Boolean:
         return values.Boolean(False)
 
-    def execute_if_statement(self, if_statement: ast.String):
+    def execute_if_statement(self, if_statement: ast.IfStatement):
         test_result = self.execute(if_statement.test)
         if test_result:
             self.execute(if_statement.body)
@@ -177,20 +171,25 @@ class Interpreter:
         return Boolean(expr_result)
 
     def execute_function_definition(self, definition: ast.Block):
+        closure = self.environment.deep_copy()
         fn = function.Function(
             definition.name,
             definition.parameters,
             definition.defaults,
             definition.body,
-            self.environment,
+            closure,
             False,
         )
         self.environment.declare(definition.name, "function")
         self.environment.assign(definition.name, fn)
+        if self.environment is not closure:
+            #closure should know about function too for recursion
+            closure.declare(definition.name, "function")
+            closure.assign(definition.name, fn)
 
     def execute_block(self, block: ast.Block, env=None):
         previous = self.environment
-        self.environment = environment.Environment(previous) if env is None else env
+        self.environment = previous.add_child() if env is None else env
         try:
             for stmt in block.statements:
                 self.execute(stmt)

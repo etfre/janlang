@@ -1,0 +1,11 @@
+var mut a = "global"
+
+if true:
+    def assign():
+        a = "assigned"
+    var mut a = "inner"
+    assign()
+    print(a)
+
+
+print(a)

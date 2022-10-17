@@ -4,15 +4,16 @@ var mut g
 if true:
     var mut local = "local"
     def ff():
-        print(local)
+        assert local == "local"
         local = "after f"
-        print(local)
+        assert local == "after f"
     f = ff
 
     def gg():
         print(local)
+        assert local == "after f"
         local = "after g"
-        print(local)
+        assert local == "after g"
     g = gg
 
 f()
