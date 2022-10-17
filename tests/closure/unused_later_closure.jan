@@ -1,0 +1,17 @@
+var closure
+
+if true:
+    var a = "a"
+
+    if true:
+        var b = "b"
+        def returnA():
+            return a
+
+        closure = returnA
+
+        if false:
+            def returnB():
+                return b
+
+    assert closure() == "a"

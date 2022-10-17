@@ -1,0 +1,13 @@
+if true:
+    var f
+
+    if true:
+        var a = "a"
+        def f_():
+            assert a == "a"
+        
+        f = f_
+    if true:
+        "Since a is out of scope, the local slot will be reused by b. Make sure that f still closes over a."
+        var b = "b"
+        f()

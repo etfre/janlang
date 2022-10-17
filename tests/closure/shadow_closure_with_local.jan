@@ -1,0 +1,9 @@
+if true:
+    var foo = "closure"
+    def f():
+        if true:
+            assert foo == "closure"
+            var foo = "shadow"
+            assert foo == "shadow"
+        assert foo == "closure"
+    f()

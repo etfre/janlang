@@ -1,0 +1,5 @@
+if true:
+    var local = "local"
+    def f():
+        assert local == "local"
+    f()

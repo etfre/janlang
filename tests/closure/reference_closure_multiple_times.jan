@@ -1,0 +1,12 @@
+var f
+
+if true:
+    var a = "a"
+    def f_():
+        assert a == "a"
+        assert a == "a"
+        
+    f = f_
+
+
+f()
