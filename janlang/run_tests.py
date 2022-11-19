@@ -13,7 +13,7 @@ def main():
     passed = []
     failed = []
     for root, _, file_names in os.walk('../tests'):
-        for file_name in file_names:
+        for file_name in sorted(file_names):
             path = os.path.join(root, file_name)
             print(f'Running {path}')
             tokenizer = lexer.RuleLexer.from_path(path)

@@ -1,11 +1,11 @@
-from iniconfig import ParseError
 import astree as ast
 import tokens
+from typing import List, Dict, Type
+
 
 class Parser:
-
     def __init__(self, _tokens):
-        self.tokens = _tokens
+        self.tokens: List[tokens.BaseToken] = _tokens
         self.pos = 0
         self._hard_fail_on_error = False
         self.statement_parse_order = (
@@ -20,7 +20,7 @@ class Parser:
             # self.parse_assign_and_declaration_statement,
             self.parse_declaration_statement,
             self.parse_assign_statement,
-            self.parse_simple_statement, # last
+            self.parse_simple_statement,  # last
         )
         self.primaries = (
             self.parse_name,
@@ -30,16 +30,17 @@ class Parser:
             self.parse_float,
             self.parse_list,
             self.parse_dictionary,
+            self.parse_grouping,
         )
-        self.comparison_tokens = {
-            tokens.Eq: ast.Eq, 
-            tokens.NotEq: ast.NotEq, 
-            tokens.Gt: ast.Gt, 
-            tokens.GtE: ast.GtE, 
-            tokens.Lt: ast.Lt, 
-            tokens.LtE: ast.LtE, 
+        self.comparison_tokens: Dict[Type[tokens.BaseToken], Type[ast.ComparisonOperator]] = {
+            tokens.Eq: ast.Eq,
+            tokens.NotEq: ast.NotEq,
+            tokens.Gt: ast.Gt,
+            tokens.GtE: ast.GtE,
+            tokens.Lt: ast.Lt,
+            tokens.LtE: ast.LtE,
         }
-        self.binary_tokens_to_ast_nodes = {
+        self.binary_tokens_to_ast_nodes: Dict[Type[tokens.BaseToken], Type[ast.Operator]] = {
             **self.comparison_tokens,
             tokens.Star: ast.Multiply,
             tokens.Plus: ast.Add,
@@ -74,9 +75,9 @@ class Parser:
         return stmts
 
     def parse_statement(self):
-        '''
+        """
         expecting a valid statement here, so hard error if everything errors
-        '''
+        """
         start_pos = self.pos
         for parse_fn in self.statement_parse_order:
             try:
@@ -95,7 +96,7 @@ class Parser:
         self.require(tokens.Colon)
         self.require(tokens.NL)
         body = self.parse_block()
-    
+
         return ast.FunctionDefinition(name, params, [], body)
 
     def parse_name_and_maybe_declaration(self):
@@ -118,7 +119,8 @@ class Parser:
             self.hard_error()
         # if also assigning to a variable decrement pos by one for parse_assign_statement
         if isinstance(self.peek(), tokens.Assign):
-            self.retreat()
+            self.pos -= 1
+            assert self.pos >= 0
         return ast.VariableDeclaration(name, is_mutable)
 
     def parse_assign_statement(self):
@@ -179,8 +181,7 @@ class Parser:
             self.hard_error()
         self.require(tokens.Dedent)
         return ast.Block(stmts)
-        
-    
+
     def parse_operations(self, next_parse_fn, operator_tokens):
         operands = []
         operators = []
@@ -190,7 +191,7 @@ class Parser:
                     node = next_parse_fn()
                     add_list = operands
                 else:
-                    tok = self.expect(operator_tokens)
+                    tok = self.expect(*operator_tokens)
                     node = self.binary_tokens_to_ast_nodes[type(tok)]()
                     add_list = operators
             except ParseError as e:
@@ -199,6 +200,7 @@ class Parser:
                 break
             else:
                 add_list.append(node)
+        print(operands, operators)
         assert not operands or len(operands) - 1 == len(operators)
         return operands, operators
 
@@ -214,13 +216,15 @@ class Parser:
         result = self.parse_expression()
         self.require(tokens.NL)
         return result
-        
-    def parse_expression(self):
+
+    def parse_expression(self) -> ast.Expr:
         return self.parse_compare()
 
     def parse_compare(self):
         op_tokens = tuple(self.comparison_tokens)
-        (left, *comparators), operators = self.parse_operations(self.parse_additive, op_tokens)
+        (left, *comparators), operators = self.parse_operations(
+            self.parse_additive, op_tokens
+        )
         if not comparators:
             return left
         return ast.Compare(left, operators, comparators)
@@ -233,16 +237,23 @@ class Parser:
         op_tokens = (tokens.Star, tokens.Slash)
         return self.binop_tree(self.parse_unary, op_tokens)
 
+    def parse_grouping(self):
+        self.expect(tokens.OpenParen)
+        expr = self.parse_expression()
+        self.expect(tokens.CloseParen)
+        return expr
+
     def parse_unary(self):
         try:
-            tok = self.expect((tokens.Not,))
+            tok = self.expect(tokens.Not, tokens.Minus)
         except ParseError:
             return self.parse_primary()
         expr = self.parse_unary()
         if isinstance(tok, tokens.Not):
             return ast.Not(expr)
+        if isinstance(tok, tokens.Minus):
+            return ast.Negative(expr)
         raise NotImplementedError
-        
 
     def parse_primary(self):
         start_pos = self.pos
@@ -311,12 +322,12 @@ class Parser:
         return ast.AssertStatement(test)
 
     def parse_boolean(self):
-        tok = self.expect((tokens.TrueToken, tokens.FalseToken))
+        tok = self.expect(tokens.TrueToken, tokens.FalseToken)
         if isinstance(tok, tokens.TrueToken):
             return ast.TrueNode()
         else:
             return ast.FalseNode()
-            
+
     def parse_float(self):
         tok = self.expect(tokens.Float)
         return ast.Float(tok.val)
@@ -335,7 +346,7 @@ class Parser:
         tok = self.expect(tokens.OpenBrace)
         vals = self.parse_dictionary_vals()
         tok = self.require(tokens.CloseBrace)
-        d =  ast.Dictionary(vals)
+        d = ast.Dictionary(vals)
         return d
 
     def parse_string(self):
@@ -357,7 +368,6 @@ class Parser:
                 break
         self.pos = pos
         return vals
-        
 
     def parse_dictionary_vals(self):
         # (expr ':' expr (',' expr ':' expr)*)*
@@ -395,36 +405,30 @@ class Parser:
                 break
         self.pos = pos
         return vals
-        
-    def expect_if_not_eof(self, types):
-        if not isinstance(self.peek(), tokens.EOF):
-            self.expect(types)
 
-    def expect_greedy(self, types, min_to_pass=1):
+    def expect_greedy(self, *types, min_to_pass=1):
         count = 0
-        while self.match(types):
+        while self.match(*types):
             count += 1
         if count < min_to_pass:
             self.error()
 
-    def expect(self, types):
-        if not isinstance(types, (list, tuple)):
-            types = [types]
+    def expect(self, *types):
         next_tok = self.peek()
         for tok_type in types:
             if isinstance(next_tok, tok_type):
                 return self.advance()
         self.error()
 
-    def require(self, types):
+    def require(self, *types):
         try:
-            return self.expect(types)
+            return self.expect(*types)
         except ParseError as e:
             raise HardParseError() from e
 
-    def match(self, types):
+    def match(self, *types):
         try:
-            return self.expect(types)
+            return self.expect(*types)
         except ParseError:
             pass
 
@@ -433,9 +437,6 @@ class Parser:
         self.pos += 1
         return curr
 
-    def retreat(self):
-        self.pos -= 1
-        assert self.pos >= 0
 
     def peek(self):
         try:
@@ -448,19 +449,19 @@ class Parser:
         text, line = tok.source
         error_msg = f'Got an error at line {line}, "{text}" {tok}'
         if msg:
-            error_msg += f'\n{msg}'
+            error_msg += f"\n{msg}"
         raise error_class(error_msg)
 
-    def error(self, msg=''):
+    def error(self, msg=""):
         self._error(msg, ParseError)
 
-    def hard_error(self, msg=''):
+    def hard_error(self, msg=""):
         self._error(msg, HardParseError)
-
 
 
 class ParseError(Exception):
     pass
+
 
 class HardParseError(Exception):
     pass

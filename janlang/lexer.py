@@ -32,6 +32,7 @@ class RuleLexer:
         self.keywords = {
             'assert': tokens.Assert,
             'break': tokens.Break,
+            'class': tokens.ClassDef,
             'continue': tokens.Continue,
             'def': tokens.FunctionDef,
             'false': tokens.FalseToken,

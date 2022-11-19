@@ -5,7 +5,7 @@ if true:
         a = "assigned"
     var mut a = "inner"
     assign()
-    print(a)
+    assert a == "inner"
 
 
-print(a)
+assert a == "assigned"

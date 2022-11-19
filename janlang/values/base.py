@@ -35,6 +35,13 @@ class BaseValue:
                 assert map_python_to_jan_types[type(proxy)] is type(self)
         self.proxy = proxy
 
+    def __neg__(self):
+        if not isinstance(self.proxy, NoProxy):
+            neg_value = -get_python_obj(self)
+            return jan_object_from_python(neg_value)
+        raise NotImplementedError
+
+
     def __add__(self, other: BaseValue):
         return binary_op(self, other, operator.add)
 

@@ -36,6 +36,7 @@ class Interpreter:
             ast.ContinueStatement: self.execute_continue_statement,
             ast.AssertStatement: self.execute_assert_statement,
             ast.Not: self.execute_not,
+            ast.Negative: self.execute_negative,
         }
         self.environment = environment.Environment(parent=None)
         self.setup_globals()
@@ -169,6 +170,10 @@ class Interpreter:
     def execute_not(self, not_expr: ast.Not):
         expr_result = self.execute(not_expr.expr)
         return Boolean(expr_result)
+
+    def execute_negative(self, negative_expr: ast.Negative):
+        expr_result = self.execute(negative_expr.value)
+        return -expr_result
 
     def execute_function_definition(self, definition: ast.Block):
         closure = self.environment.deep_copy()
