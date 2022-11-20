@@ -1,4 +1,5 @@
 import execution_context, environment
+import values
 
 class Function:
 
@@ -21,6 +22,7 @@ class Function:
             interpreter.execute_block(self.body, env)
         except Return as ret:
             return ret.value
+        return values.Void()
 
 class Return(BaseException):
     

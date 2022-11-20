@@ -10,40 +10,43 @@ import environment, values, errors
 class Interpreter:
     def __init__(self):
         self.execute_map = {
-            ast.Program: self.execute_program,
-            ast.Module: self.execute_module,
-            ast.VariableDeclaration: self.execute_variable_declaration,
+            ast.AssertStatement: self.execute_assert_statement,
             ast.Assignment: self.execute_assignment,
-            ast.String: self.execute_string,
-            ast.IfStatement: self.execute_if_statement,
+            ast.BinOp: self.execute_bin_op,
             ast.Block: self.execute_block,
-            ast.Name: self.execute_name,
-            ast.List: self.execute_list,
+            ast.BreakStatement: self.execute_break_statement,
+            ast.Call: self.execute_call,
+            ast.Compare: self.execute_compare,
+            ast.ContinueStatement: self.execute_continue_statement,
             ast.Dictionary: self.execute_dictionary,
+            ast.FalseNode: self.execute_false,
+            ast.Float: self.execute_float,
+            ast.ForStatement: self.execute_for_statement,
+            ast.FunctionDefinition: self.execute_function_definition,
+            ast.IfStatement: self.execute_if_statement,
             ast.Index: self.execute_index,
             ast.Integer: self.execute_integer,
-            ast.Float: self.execute_float,
-            ast.TrueNode: self.execute_true,
-            ast.FalseNode: self.execute_false,
-            ast.Call: self.execute_call,
-            ast.FunctionDefinition: self.execute_function_definition,
-            ast.Return: self.execute_return,
-            ast.BinOp: self.execute_bin_op,
-            ast.Compare: self.execute_compare,
-            ast.ForStatement: self.execute_for_statement,
-            ast.WhileStatement: self.execute_while_statement,
-            ast.BreakStatement: self.execute_break_statement,
-            ast.ContinueStatement: self.execute_continue_statement,
-            ast.AssertStatement: self.execute_assert_statement,
-            ast.Not: self.execute_not,
+            ast.List: self.execute_list,
+            ast.Module: self.execute_module,
+            ast.Name: self.execute_name,
             ast.Negative: self.execute_negative,
+            ast.Not: self.execute_not,
+            ast.Program: self.execute_program,
+            ast.Return: self.execute_return,
+            ast.String: self.execute_string,
+            ast.TrueNode: self.execute_true,
+            ast.VariableDeclaration: self.execute_variable_declaration,
+            ast.WhileStatement: self.execute_while_statement,
         }
         self.environment = environment.Environment(parent=None)
         self.setup_globals()
 
     def execute(self, node):
         fn = self.execute_map[type(node)]
-        return fn(node)
+        result = fn(node)
+        print(result)
+        assert result is None or isinstance(result, (values.BaseValue, function.Function))
+        return result
 
     def execute_module(self, module: ast.Module):
         for stmt in module.body:
@@ -129,17 +132,15 @@ class Interpreter:
     def execute_string(self, str_: ast.String) -> values.String:
         return values.String(str_.value)
 
-    def execute_compare(self, cmp: ast.Compare) -> values.String:
+    def execute_compare(self, cmp: ast.Compare) -> values.Boolean:
         # operator_map = {'!=': operator.ne, '==': operator.eq, '<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
         curr = self.execute(cmp.left)
         for op, node in zip(cmp.ops, cmp.comparators):
             right = self.execute(node)
             if not op.evaluate(curr, right):
-                return False
+                return values.Boolean(False)
             curr = right
-        return True
-        # cmp.
-        return values.String(str_.value)
+        return values.Boolean(True)
 
     def execute_call(self, call: ast.Call) -> values.String:
         function_to_call = self.execute(call.fn)
@@ -192,7 +193,7 @@ class Interpreter:
             closure.declare(definition.name, "function")
             closure.assign(definition.name, fn)
 
-    def execute_block(self, block: ast.Block, env=None):
+    def execute_block(self, block: ast.Block, env=None) -> None:
         previous = self.environment
         self.environment = previous.add_child() if env is None else env
         try:
@@ -201,8 +202,11 @@ class Interpreter:
         finally:
             self.environment = previous
 
-    def execute_return(self, ret):
-        result = self.execute(ret.value)
+    def execute_return(self, ret: ast.Return):
+        if ret.value is None:
+            result = values.Void()
+        else:
+            result = self.execute(ret.value)
         raise function.Return(result)
 
     def execute_bin_op(self, bin_op: ast.BinOp):

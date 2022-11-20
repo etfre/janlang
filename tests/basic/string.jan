@@ -1,0 +1,5 @@
+def foo():
+    print("foo")
+
+2 == 3
+var f = foo()

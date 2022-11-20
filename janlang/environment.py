@@ -1,5 +1,5 @@
 from __future__ import annotations
-from values import base
+from values import base, Void
 
 class Environment:
 
@@ -20,6 +20,8 @@ class Environment:
 
     def assign(self, name: str, value: base.BaseValue) -> Symbol:
         assert value is not None
+        if isinstance(value, Void):
+            raise RuntimeError("Cannot assign void type")
         symbol = self.get(name)
         if symbol.type == "immutable_variable" and symbol.value_initialized:
             raise RuntimeError(f'Cannot reassign to immutable variable {name}')
@@ -35,7 +37,7 @@ class Environment:
         return self.values[name]
 
     def deep_copy(self):
-        if self.is_root:
+        if self.parent is None:
             return self
         copied_parent = self.parent.deep_copy()
         copied = Environment(copied_parent)

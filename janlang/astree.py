@@ -1,13 +1,5 @@
 from __future__ import annotations
-import types
-import re
-import json
-import operator
-import execution_context
-import interpreter
-import function
 from values.base import BaseValue
-import values
 from typing import List as ListType, TypeAlias
 
 
@@ -22,12 +14,6 @@ class Expr(BaseNode):
 class Program(BaseNode):
     def __init__(self, main):
         self.main = main
-
-    def execute(self, context):
-        self.main.execute(context)
-
-    def typecheck(self, context):
-        pass
 
 
 class Block(BaseNode):
@@ -44,16 +30,10 @@ class ArgumentReference(BaseNode):
     def __init__(self, value: str):
         self.value = value
 
-    def execute(self, context):
-        return context.argument_frames[-1][self.value]
-
 
 class Whitespace(BaseNode):
     def __init__(self, value: str):
         self.value = value
-
-    def execute(self, context):
-        return self.value
 
 
 class Gt:
@@ -162,19 +142,10 @@ class Exponent(Expr):
         self.left = left
         self.right = right
 
-    def execute(self, context):
-        right = self.right.evaluate(context)
-        return self.left.evaluate(context) ** right
-
-
 class Or(Expr):
     def __init__(self, left, right):
         self.left = left
         self.right = right
-
-    def execute(self, context):
-        return self.left.evaluate(context) or self.right.evaluate(context)
-
 
 class And(Expr):
     def __init__(self, left, right):
@@ -214,7 +185,7 @@ class Index(Expr):
         self.index = index
 
 
-class Slice(BaseNode):
+class Slice(Expr):
     def __init__(self, slice_of, start, stop, step):
         self.slice_of: Expr = slice_of
         self.start = start
@@ -232,12 +203,6 @@ class Call(Expr):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
-
-    def prepare_call(self, context):
-        function_to_call = self.fn.execute(context)
-        arg_values = [arg.execute(context) for arg in self.args]
-        kwarg_values = {k: v.execute(context) for k, v in self.kwargs.items()}
-        return arg_values, kwarg_values, function_to_call
 
 
 class Assignment(BaseNode):
@@ -260,13 +225,10 @@ class ForStatement(BaseNode):
 
 
 class ContinueStatement(BaseNode):
-    def execute(self, context: execution_context.ExecutionContext):
-        raise interpreter.Continue()
-
+    pass
 
 class BreakStatement(BaseNode):
-    def execute(self, context: execution_context.ExecutionContext):
-        raise interpreter.Break()
+    pass
 
 
 class Name(BaseNode):
@@ -292,7 +254,7 @@ class ClassDefinition(BaseNode):
 
 class Return(BaseNode):
     def __init__(self, value):
-        self.value: Expr = value
+        self.value: Expr | None = value
 
 
 class AssertStatement(BaseNode):
@@ -300,11 +262,11 @@ class AssertStatement(BaseNode):
         self.test: Expr = test
 
 
-class TrueNode(BaseNode):
+class TrueNode(Expr):
     pass
 
 
-class FalseNode(BaseNode):
+class FalseNode(Expr):
     pass
 
 
