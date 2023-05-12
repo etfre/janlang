@@ -237,7 +237,7 @@ class Name(BaseNode):
 
 
 class FunctionDefinition(BaseNode):
-    def __init__(self, name: str, parameters, defaults, body):
+    def __init__(self, name: str, parameters: list[Parameter], defaults, body):
         self.name = name
         self.parameters = parameters
         self.defaults = defaults

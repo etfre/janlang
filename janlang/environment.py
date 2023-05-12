@@ -4,7 +4,7 @@ from values import base, Void
 class Environment:
 
     def __init__(self, parent: Environment | None) -> None:
-        self.values = {}
+        self.values: dict[str, Symbol] = {}
         self.parent = parent
 
     @property
@@ -51,8 +51,8 @@ class Environment:
 
 class Symbol:
 
-    def __init__(self, name, type):
+    def __init__(self, name: str, type):
         self.name = name
         self.type = type
-        self.value = None
-        self.value_initialized = False
+        self.value: base.BaseValue | None = None
+        self.value_initialized: bool = False

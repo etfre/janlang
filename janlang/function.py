@@ -1,4 +1,4 @@
-import execution_context, environment
+import environment
 import values
 
 class Function:

@@ -1,6 +1,5 @@
 import contextlib
 from xmlrpc.client import Boolean
-import execution_context
 import native_functions
 import function
 import astree as ast
@@ -111,7 +110,7 @@ class Interpreter:
     def execute_assignment(self, assgn: ast.Assignment):
         left = assgn.left
         if isinstance(left, ast.Name):
-            name_string = assgn.left.value
+            name_string = left.value
             symbol = self.environment.get(name_string)
             value = self.execute(assgn.right)
             self.environment.assign(name_string, value)
@@ -176,7 +175,7 @@ class Interpreter:
         expr_result = self.execute(negative_expr.value)
         return -expr_result
 
-    def execute_function_definition(self, definition: ast.Block):
+    def execute_function_definition(self, definition: ast.FunctionDefinition):
         closure = self.environment.deep_copy()
         fn = function.Function(
             definition.name,

@@ -375,7 +375,7 @@ class Parser:
 
     def parse_parameters(self):
         start = self.pos
-        vals = []
+        vals: list[ast.Parameter] = []
         pos = self.pos
         while True:
             try:
@@ -413,7 +413,7 @@ class Parser:
     def parse_listvals(self):
         # (expr (',' expr)*)*
         start = self.pos
-        vals = []
+        vals: list[ast.Expr] = []
         pos = self.pos
         while True:
             try:
