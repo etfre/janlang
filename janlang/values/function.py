@@ -1,9 +1,10 @@
 import environment
 import values
 
-class Function:
+class Function(values.BaseValue):
 
-    def __init__(self, name: str, parameters, defaults, body, closure, is_native_function):
+    def __init__(self, name: str, parameters, defaults, body, closure, is_native_function: bool):
+        super().__init__()
         self.name = name
         self.parameters = parameters
         self.defaults = defaults
@@ -26,5 +27,5 @@ class Function:
 
 class Return(BaseException):
     
-    def __init__(self, value):
+    def __init__(self, value: values.BaseValue):
         self.value = value

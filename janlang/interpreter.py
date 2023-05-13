@@ -1,9 +1,10 @@
 import contextlib
 from xmlrpc.client import Boolean
 import native_functions
-import function
 import astree as ast
 import environment, values, errors
+from values.function import Return
+from typing import Final
 
 
 class Interpreter:
@@ -43,8 +44,7 @@ class Interpreter:
     def execute(self, node):
         fn = self.execute_map[type(node)]
         result = fn(node)
-        print(result)
-        assert result is None or isinstance(result, (values.BaseValue, function.Function))
+        assert result is None or isinstance(result, (values.BaseValue))
         return result
 
     def execute_module(self, module: ast.Module):
@@ -143,7 +143,7 @@ class Interpreter:
 
     def execute_call(self, call: ast.Call) -> values.String:
         function_to_call = self.execute(call.fn)
-        if not isinstance(function_to_call, function.Function):
+        if not isinstance(function_to_call, values.Function):
             raise RuntimeError(f"Trying to call a function, but got {function_to_call}")
         args = [self.execute(arg) for arg in call.args]
         kwargs = {k: self.execute(v) for k, v in call.kwargs.items()}
@@ -177,7 +177,7 @@ class Interpreter:
 
     def execute_function_definition(self, definition: ast.FunctionDefinition):
         closure = self.environment.deep_copy()
-        fn = function.Function(
+        fn = values.Function(
             definition.name,
             definition.parameters,
             definition.defaults,
@@ -206,7 +206,7 @@ class Interpreter:
             result = values.Void()
         else:
             result = self.execute(ret.value)
-        raise function.Return(result)
+        raise Return(result)
 
     def execute_bin_op(self, bin_op: ast.BinOp):
         left, right = self.execute(bin_op.left), self.execute(bin_op.right)
@@ -219,7 +219,7 @@ class Interpreter:
         closure = self.environment
         is_native_function = True
         for name, native_fn in native_functions.FUNCTIONS.items():
-            fn = function.Function(name, [], [], native_fn, closure, is_native_function)
+            fn = values.Function(name, [], [], native_fn, closure, is_native_function)
             self.environment.declare(name, "native_function")
             self.environment.assign(name, fn)
 

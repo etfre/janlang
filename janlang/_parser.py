@@ -1,9 +1,9 @@
 import astree as ast
 from contextlib import contextmanager
 import tokens
-from typing import List, Dict, Type, Iterable
+from typing import List, Type, Never
 
-comparison_tokens: Dict[Type[tokens.BaseToken], Type[ast.ComparisonOperator]] = {
+comparison_tokens: dict[Type[tokens.BaseToken], Type[ast.ComparisonOperator]] = {
     tokens.Eq: ast.Eq,
     tokens.NotEq: ast.NotEq,
     tokens.Gt: ast.Gt,
@@ -11,7 +11,7 @@ comparison_tokens: Dict[Type[tokens.BaseToken], Type[ast.ComparisonOperator]] = 
     tokens.Lt: ast.Lt,
     tokens.LtE: ast.LtE,
 }
-binary_tokens_to_ast_nodes: Dict[Type[tokens.BaseToken], Type[ast.Operator]] = {
+binary_tokens_to_ast_nodes: dict[Type[tokens.BaseToken], Type[ast.Operator]] = {
     **comparison_tokens,
     tokens.Star: ast.Multiply,
     tokens.Plus: ast.Add,
@@ -20,7 +20,7 @@ binary_tokens_to_ast_nodes: Dict[Type[tokens.BaseToken], Type[ast.Operator]] = {
 
 class Parser:
     def __init__(self, _tokens):
-        self.tokens: List[tokens.BaseToken] = _tokens
+        self.tokens: list[tokens.BaseToken] = _tokens
         self.pos = 0
         self.errors = []
         self._hard_fail_on_error = False
@@ -62,7 +62,7 @@ class Parser:
         return root_module
 
     def parse_statements(self):
-        stmts = []
+        stmts: list[ast.BaseNode] = []
         while True:
             self.expect_greedy(tokens.NL, min_to_pass=0)
             if isinstance(self.peek(), (tokens.EOF, tokens.Dedent)):
@@ -71,13 +71,10 @@ class Parser:
             result = self.parse_statement()
             if result is None:
                 break
-            if isinstance(result, (list, tuple)):
-                stmts.extend(result)
-            else:
-                stmts.append(result)
+            stmts.append(result)
         return stmts
 
-    def parse_statement(self):
+    def parse_statement(self) -> ast.BaseNode:
         """
         expecting a valid statement here, so hard error if everything errors
         """
@@ -202,8 +199,8 @@ class Parser:
         return ast.Block(stmts)
 
     def parse_operations(self, next_parse_fn, operator_tokens):
-        operands = []
-        operators = []
+        operands: list[ast.Expr] = []
+        operators: list[ast.Operator] = []
         while True:
             try:
                 if len(operands) == len(operators):
@@ -211,7 +208,7 @@ class Parser:
                     add_list = operands
                 else:
                     tok = self.expect(*operator_tokens)
-                    node = binary_tokens_to_ast_nodes[type(tok)]()
+                    node: ast.Operator = binary_tokens_to_ast_nodes[type(tok)]()
                     add_list = operators
             except ParseError as e:
                 if not operands:
@@ -276,7 +273,7 @@ class Parser:
 
     def parse_primary(self):
         start_pos = self.pos
-        node = None
+        node: ast.Expr | None = None
         for fn in self.primaries:
             try:
                 node = fn()
@@ -294,8 +291,8 @@ class Parser:
             node = next_node
         return node
 
-    def make_chain(self, root, chain_functions):
-        next_node = None
+    def make_chain(self, root: ast.Expr, chain_functions) -> ast.Expr | None:
+        next_node: ast.Expr | None = None
         start_pos = self.pos
         for fn in chain_functions:
             try:
@@ -308,18 +305,18 @@ class Parser:
             self.pos = start_pos
         return next_node
 
-    def finish_index(self, val: tokens.BaseToken):
+    def finish_index(self, val: ast.Expr):
         self.expect(tokens.OpenBracket)
         expr = self.parse_expression()
         self.expect(tokens.CloseBracket)
         return ast.Index(val, expr)
 
-    def finish_attribute(self, val: tokens.BaseToken):
+    def finish_attribute(self, val: ast.Expr):
         self.expect(tokens.Period)
         name = self.expect(tokens.Name)
         return ast.Attribute(val, name.value)
 
-    def finish_call(self, func):
+    def finish_call(self, func: ast.Expr):
         self.expect(tokens.OpenParen)
         args = self.parse_listvals()
         self.expect(tokens.CloseParen)
@@ -464,7 +461,7 @@ class Parser:
         except IndexError:
             return
 
-    def _error(self, msg, error_class):
+    def _error(self, msg, error_class) -> Never:
         tok = self.peek()
         text, line = tok.source
         error_msg = f'Got an error at line {line}, "{text}" {tok}'
@@ -475,7 +472,7 @@ class Parser:
     def error(self, msg=""):
         self._error(msg, ParseError)
 
-    def hard_error(self, msg=""):
+    def hard_error(self, msg="") -> Never:
         self._error(msg, HardParseError)
 
 

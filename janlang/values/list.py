@@ -2,7 +2,7 @@ from values import base
 
 
 class List(base.BaseValue):
-    def __init__(self, l) -> None:
+    def __init__(self, l: list) -> None:
         super().__init__(l)
 
     def __repr__(self) -> str:

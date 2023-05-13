@@ -7,4 +7,4 @@ from values.dictionary import Dictionary
 from values.void import Void
 from values.bool import Boolean
 from values.base import BaseValue
-
+from values.function import Function

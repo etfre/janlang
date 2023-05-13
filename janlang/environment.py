@@ -1,5 +1,9 @@
 from __future__ import annotations
 from values import base, Void
+from typing import Literal
+
+
+DECLARATION_TYPE = Literal["function", "native_function", "parameter", "immutable_variable", "variable"]
 
 class Environment:
 
@@ -11,7 +15,7 @@ class Environment:
     def is_root(self):
         return self.parent is None
 
-    def declare(self, name: str, type_) -> Symbol:
+    def declare(self, name: str, type_: DECLARATION_TYPE) -> Symbol:
         if name in self.values:
             raise RuntimeError(f'{name} already declared in this scope')
         symbol = Symbol(name, type_)
@@ -51,7 +55,7 @@ class Environment:
 
 class Symbol:
 
-    def __init__(self, name: str, type):
+    def __init__(self, name: str, type: DECLARATION_TYPE):
         self.name = name
         self.type = type
         self.value: base.BaseValue | None = None

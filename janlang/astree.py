@@ -114,7 +114,7 @@ class Float(Expr):
         self.value = float(value)
 
 
-class Not(Expr):
+class Not(BaseNode):
     def __init__(self, expr):
         self.expr: BaseValue = expr
 
@@ -138,17 +138,17 @@ class BinOp(Expr):
 
 
 class Exponent(Expr):
-    def __init__(self, left, right):
+    def __init__(self, left: Expr, right: Expr):
         self.left = left
         self.right = right
 
 class Or(Expr):
-    def __init__(self, left, right):
+    def __init__(self, left: Expr, right: Expr):
         self.left = left
         self.right = right
 
 class And(Expr):
-    def __init__(self, left, right):
+    def __init__(self, left: Expr, right: Expr):
         self.left = left
         self.right = right
 
@@ -171,7 +171,7 @@ class Dictionary(Expr):
 
 
 class Attribute(Expr):
-    def __init__(self, attribute_of, name):
+    def __init__(self, attribute_of: Expr, name: Expr):
         self.attribute_of = attribute_of
         self.name = name
 
@@ -180,7 +180,7 @@ class Attribute(Expr):
 
 
 class Index(Expr):
-    def __init__(self, index_of, index):
+    def __init__(self, index_of: Expr, index: Expr):
         self.index_of = index_of
         self.index = index
 
@@ -199,16 +199,16 @@ class Parameter(Expr):
 
 
 class Call(Expr):
-    def __init__(self, fn, args, kwargs):
+    def __init__(self, fn: Expr, args: list[Expr], kwargs):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
 
 
 class Assignment(BaseNode):
-    def __init__(self, left, right):
+    def __init__(self, left: BaseNode, right: Expr):
         self.left: BaseNode = left
-        self.right: Expr = right
+        self.right = right
 
 
 class WhileStatement(BaseNode):
@@ -219,8 +219,8 @@ class WhileStatement(BaseNode):
 
 class ForStatement(BaseNode):
     def __init__(self, left, iter, body):
-        self.left = left
-        self.iter = iter
+        self.left: Name | VariableDeclaration = left
+        self.iter: Expr = iter
         self.body: Block = body
 
 
@@ -231,13 +231,13 @@ class BreakStatement(BaseNode):
     pass
 
 
-class Name(BaseNode):
+class Name(Expr):
     def __init__(self, value):
         self.value: str = value
 
 
 class FunctionDefinition(BaseNode):
-    def __init__(self, name: str, parameters: list[Parameter], defaults, body):
+    def __init__(self, name: str, parameters: list[Parameter], defaults, body: Block):
         self.name = name
         self.parameters = parameters
         self.defaults = defaults

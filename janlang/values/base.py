@@ -4,7 +4,6 @@ import operator
 
 def create_type_maps():
     import values
-
     m1 = {
         bool: values.Boolean,
         int: values.Integer,
@@ -24,12 +23,15 @@ map_jan_to_python_types = None
 class NoProxy:
     pass
 
+x = NoProxy
+print('preg', x is NoProxy)
+
 
 class BaseValue:
     def __init__(self, proxy=NoProxy) -> None:
         global map_python_to_jan_types
         global map_jan_to_python_types
-        if not isinstance(proxy, NoProxy):
+        if not (isinstance(proxy, NoProxy) or proxy is NoProxy):
             if map_jan_to_python_types is None:
                 map_python_to_jan_types, map_jan_to_python_types = create_type_maps()
                 assert map_python_to_jan_types[type(proxy)] is type(self)
@@ -50,7 +52,7 @@ class BaseValue:
 
     def __mul__(self, other: BaseValue):
         return binary_op(self, other, operator.mul)
-
+    
     def __div__(self, other: BaseValue):
         return binary_op(self, other, operator.div)
 
@@ -102,7 +104,7 @@ def get_python_obj(value: BaseValue):
     return value.proxy
 
 
-def jan_object_from_python(py_obj):
+def jan_object_from_python(py_obj) -> BaseValue:
     return map_python_to_jan_types[type(py_obj)](py_obj)
 
 
