@@ -3,7 +3,7 @@ from values import base, Void
 from typing import Literal
 
 
-DECLARATION_TYPE = Literal["function", "native_function", "parameter", "immutable_variable", "variable"]
+DECLARATION_TYPE = Literal["function", "native_function", "parameter", "immutable_variable", "variable", "class_definition"]
 
 class Environment:
 

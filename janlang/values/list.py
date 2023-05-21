@@ -2,6 +2,7 @@ from values import base
 
 
 class List(base.BaseValue):
+    proxy: list
     def __init__(self, l: list) -> None:
         super().__init__(l)
 

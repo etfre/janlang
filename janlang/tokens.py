@@ -159,6 +159,9 @@ class Name(BaseToken):
 class If(BaseToken):
     pass
 
+class Else(BaseToken):
+    pass
+
 
 class While(BaseToken):
     pass
@@ -208,3 +211,18 @@ class String(BaseToken):
     def __init__(self, val):
         super().__init__()
         self.val = val
+
+class TryToken(BaseToken):
+    pass
+
+class ExceptToken(BaseToken):
+    pass
+
+class FinallyToken(BaseToken):
+    pass
+
+class Pass(BaseToken):
+    pass
+
+class This(BaseToken):
+    pass

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from values.base import BaseValue
 from typing import List as ListType, TypeAlias
 
 
@@ -103,10 +102,11 @@ class Integer(Expr):
 
 
 class IfStatement(BaseNode):
-    def __init__(self, test, orelse, body):
+    def __init__(self, test, body, else_ifs, else_body):
         self.test: Expr = test
-        self.orelse: Expr = orelse
         self.body: Block = body
+        self.else_ifs: list[tuple[Expr, Block]] = else_ifs
+        self.else_body: Block | None = else_body
 
 
 class Float(Expr):
@@ -115,8 +115,8 @@ class Float(Expr):
 
 
 class Not(BaseNode):
-    def __init__(self, expr):
-        self.expr: BaseValue = expr
+    def __init__(self, expr: Expr):
+        self.expr = expr
 
 
 class Negative(Expr):
@@ -245,11 +245,9 @@ class FunctionDefinition(BaseNode):
 
 
 class ClassDefinition(BaseNode):
-    def __init__(self, name: str, parameters, defaults, body):
+    def __init__(self, name: str, methods: list[FunctionDefinition]):
         self.name = name
-        self.parameters = parameters
-        self.defaults = defaults
-        self.body = body
+        self.methods = methods
 
 
 class Return(BaseNode):
@@ -260,6 +258,9 @@ class Return(BaseNode):
 class AssertStatement(BaseNode):
     def __init__(self, test):
         self.test: Expr = test
+
+class Null(Expr):
+    pass
 
 
 class TrueNode(Expr):

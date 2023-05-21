@@ -6,3 +6,4 @@ share/
 debug/
 pyvenv.cfg
 *.pyc
+.vscode/

@@ -1,0 +1,25 @@
+if true:
+    assert true
+else:
+    assert false
+
+var mut x = null
+if false:
+    pass
+else:
+    x = 5
+
+assert x == 5
+
+var mut y = null
+if false:
+    y = 1
+else if false:
+    y = 2
+else if true:
+    y = 3
+else if true:
+    y = 4
+else:
+    y = 5
+assert y == 3

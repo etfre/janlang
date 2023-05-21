@@ -1,9 +1,11 @@
 from __future__ import annotations
+from typing import Any
 import operator
 
 
 def create_type_maps():
     import values
+
     m1 = {
         bool: values.Boolean,
         int: values.Integer,
@@ -23,12 +25,12 @@ map_jan_to_python_types = None
 class NoProxy:
     pass
 
+
 x = NoProxy
-print('preg', x is NoProxy)
 
 
 class BaseValue:
-    def __init__(self, proxy=NoProxy) -> None:
+    def __init__(self, proxy: Any = NoProxy) -> None:
         global map_python_to_jan_types
         global map_jan_to_python_types
         if not (isinstance(proxy, NoProxy) or proxy is NoProxy):
@@ -43,7 +45,6 @@ class BaseValue:
             return jan_object_from_python(neg_value)
         raise NotImplementedError
 
-
     def __add__(self, other: BaseValue):
         return binary_op(self, other, operator.add)
 
@@ -52,7 +53,7 @@ class BaseValue:
 
     def __mul__(self, other: BaseValue):
         return binary_op(self, other, operator.mul)
-    
+
     def __div__(self, other: BaseValue):
         return binary_op(self, other, operator.div)
 
@@ -89,7 +90,7 @@ class BaseValue:
 
     def __repr__(self):
         if not isinstance(self.proxy, NoProxy):
-            return f'{repr(self.proxy)} - {super().__repr__()}'
+            return f"{repr(self.proxy)} - {super().__repr__()}"
         return super().__repr__()
 
     def __iter__(self):

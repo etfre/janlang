@@ -1,0 +1,10 @@
+class Cat:
+    constructor():
+        pass
+
+    meow():
+        print("meow")
+
+var c = Cat()
+print(c)
+c.meow()

@@ -1,7 +1,9 @@
 import astree as ast
 from contextlib import contextmanager
 import tokens
-from typing import List, Type, Never
+from typing import List, Type, Never, Generic, TypeVar
+
+TokenType = TypeVar("TokenType", bound=tokens.BaseToken)
 
 comparison_tokens: dict[Type[tokens.BaseToken], Type[ast.ComparisonOperator]] = {
     tokens.Eq: ast.Eq,
@@ -26,6 +28,7 @@ class Parser:
         self._hard_fail_on_error = False
         self.statement_parse_order = (
             self.parse_function_definition,
+            self.parse_class_definition,
             self.parse_return_statement,
             self.parse_if_statement,
             self.parse_while_statement,
@@ -36,6 +39,7 @@ class Parser:
             # self.parse_assign_and_declaration_statement,
             self.parse_declaration_statement,
             self.parse_assign_statement,
+            self.parse_pass_statement,
             self.parse_simple_statement,  # last
         )
         self.primaries = (
@@ -43,6 +47,7 @@ class Parser:
             self.parse_boolean,
             self.parse_string,
             self.parse_int,
+            self.parse_null,
             self.parse_float,
             self.parse_list,
             self.parse_dictionary,
@@ -58,7 +63,11 @@ class Parser:
     def parse_module(self):
         tok_length = len(self.tokens)
         body = self.parse_statements()
-        root_module = ast.Module(body)
+        tok = self.peek()
+        if not isinstance(tok, tokens.EOF):
+            self.hard_error("Did not parse all tokens in module")
+        filtered_pass_body = [x for x in body if not isinstance(x, PassResult)]
+        root_module = ast.Module(filtered_pass_body)
         return root_module
 
     def parse_statements(self):
@@ -106,10 +115,7 @@ class Parser:
         self.require(tokens.OpenParen)
         params = self.parse_parameters()
         self.require(tokens.CloseParen)
-        self.require(tokens.Colon)
-        self.require(tokens.NL)
-        body = self.parse_block()
-
+        body = self.colon_newline_and_block()
         return ast.FunctionDefinition(name, params, [], body)
 
     def parse_name_and_maybe_declaration(self):
@@ -148,17 +154,34 @@ class Parser:
     def parse_if_statement(self):
         self.expect(tokens.If)
         test = self.parse_expression()
+        body = self.colon_newline_and_block()
+        else_ifs = []
+        else_body = None
+        while else_body is None:
+            try:
+                self.expect(tokens.Else)
+            except ParseError:
+                break
+            next_tok = self.peek()
+            if isinstance(next_tok, tokens.If):
+                self.advance()
+                elif_test = self.parse_expression()
+                elif_body = self.colon_newline_and_block()
+                else_ifs.append((elif_test, elif_body))
+            else:
+                else_body = self.colon_newline_and_block()
+                
+        return ast.IfStatement(test, body, else_ifs, else_body)
+    
+    def colon_newline_and_block(self):
         self.require(tokens.Colon)
         self.require(tokens.NL)
-        body = self.parse_block()
-        return ast.IfStatement(test, [], body)
+        return self.parse_block()
 
     def parse_while_statement(self):
         self.expect(tokens.While)
         test = self.parse_expression()
-        self.require(tokens.Colon)
-        self.require(tokens.NL)
-        body = self.parse_block()
+        body = self.colon_newline_and_block()
         return ast.WhileStatement(test, body)
 
     def parse_for_statement(self):
@@ -166,9 +189,7 @@ class Parser:
         name = self.parse_name_and_maybe_declaration()
         self.require(tokens.In)
         iter = self.parse_expression()
-        self.require(tokens.Colon)
-        self.require(tokens.NL)
-        body = self.parse_block()
+        body = self.colon_newline_and_block()
         return ast.ForStatement(name, iter, body)
 
     def parse_continue_statement(self):
@@ -196,7 +217,8 @@ class Parser:
         if not stmts:
             self.hard_error()
         self.require(tokens.Dedent)
-        return ast.Block(stmts)
+        filtered_pass_stmts = [x for x in stmts if not isinstance(x, PassResult)]
+        return ast.Block(filtered_pass_stmts)
 
     def parse_operations(self, next_parse_fn, operator_tokens):
         operands: list[ast.Expr] = []
@@ -226,6 +248,11 @@ class Parser:
             right = operands[i]
             left = ast.BinOp(left, op, right)
         return left
+
+    def parse_pass_statement(self):
+        self.expect(tokens.Pass)
+        self.require(tokens.NL)
+        return PassResult()
 
     def parse_simple_statement(self):
         result = self.parse_expression()
@@ -344,6 +371,10 @@ class Parser:
             return ast.TrueNode()
         else:
             return ast.FalseNode()
+        
+    def parse_null(self):
+        tok = self.expect(tokens.NullToken)
+        return ast.Null()
 
     def parse_float(self):
         tok = self.expect(tokens.Float)
@@ -354,15 +385,15 @@ class Parser:
         return ast.Integer(tok.val)
 
     def parse_list(self):
-        tok = self.expect(tokens.OpenBracket)
+        self.expect(tokens.OpenBracket)
         list_vals = self.parse_listvals()
-        tok = self.require(tokens.CloseBracket, error='Expecting ]')
+        self.require(tokens.CloseBracket, error='Expecting ]')
         return ast.List(list_vals)
 
     def parse_dictionary(self):
-        tok = self.expect(tokens.OpenBrace)
+        self.expect(tokens.OpenBrace)
         vals = self.parse_dictionary_vals()
-        tok = self.require(tokens.CloseBrace, error='Expecting }')
+        self.require(tokens.CloseBrace, error='Expecting }')
         d = ast.Dictionary(vals)
         return d
 
@@ -422,6 +453,42 @@ class Parser:
                 break
         self.pos = pos
         return vals
+    
+    def parse_class_definition(self):
+        self.expect(tokens.ClassDef)
+        name = self.require(tokens.Name)
+        self.require(tokens.Colon)
+        self.require(tokens.NL)
+        self.require(tokens.Indent)
+        has_pass = False
+        class_body_stmts: list[ast.FunctionDefinition] = []
+        while True:
+            self.expect_greedy(tokens.NL, min_to_pass=0)
+            tok = self.peek()
+            if isinstance(tok, (tokens.EOF, tokens.Dedent)):
+                break
+            elif isinstance(tok, tokens.Pass):
+                has_pass = True
+                self.advance()
+                continue
+            try:
+                result = self.parse_method()
+            except ParseError:
+                break
+            class_body_stmts.append(result)
+        if not (class_body_stmts or has_pass):
+            self.hard_error()
+        self.require(tokens.Dedent)        
+        cls_def = ast.ClassDefinition(name.value, class_body_stmts)
+        return cls_def
+    
+    def parse_method(self):
+        name = self.require(tokens.Name).value
+        self.require(tokens.OpenParen)
+        params = self.parse_parameters()
+        self.require(tokens.CloseParen)
+        body = self.colon_newline_and_block()
+        return ast.FunctionDefinition(name, params, [], body)
 
     def expect_greedy(self, *types, min_to_pass=1):
         count = 0
@@ -437,9 +504,9 @@ class Parser:
                 return self.advance()
         self.error()
 
-    def require(self, *types, error=''):
+    def require(self, token_type, error=''):
         try:
-            return self.expect(*types)
+            return self.expect(token_type)
         except ParseError as e:
             self.hard_error(error)
 
@@ -460,6 +527,15 @@ class Parser:
             return self.tokens[self.pos]
         except IndexError:
             return
+        
+    def peek_many(self, count: int):
+        toks: list[tokens.BaseToken] = []
+        for i in range(count):
+            try:
+                toks.append(self.tokens[self.pos + i])
+            except IndexError:
+                return
+        return toks
 
     def _error(self, msg, error_class) -> Never:
         tok = self.peek()
@@ -475,6 +551,9 @@ class Parser:
     def hard_error(self, msg="") -> Never:
         self._error(msg, HardParseError)
 
+
+class PassResult():
+    pass
 
 class ParseError(Exception):
     pass
