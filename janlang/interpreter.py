@@ -11,6 +11,7 @@ class Interpreter:
         self.execute_map = {
             ast.AssertStatement: self.execute_assert_statement,
             ast.Assignment: self.execute_assignment,
+            ast.Attribute: self.execute_attribute,
             ast.BinOp: self.execute_bin_op,
             ast.Block: self.execute_block,
             ast.BreakStatement: self.execute_break_statement,
@@ -127,9 +128,16 @@ class Interpreter:
         elif isinstance(left, ast.Attribute):
             attribute_of_value = self.execute(left.attribute_of)
             attribute_name = self.execute(left.name)
-            attribute_of_value[attribute_name] = self.execute(assgn.right)
+            attribute_of_value.setattr(attribute_name, self.execute(assgn.right))
         else:
             raise errors.JanRuntimeException()
+        
+    def execute_attribute(self, attr: ast.Attribute):
+        attribute_of_value = self.execute(attr.attribute_of)
+        attr = attribute_of_value.getattr(attr.name)
+        print('attr', attr)
+        return attr
+    
 
     def execute_name(self, name: ast.Name):
         return self.environment.get(name.value).value
@@ -152,13 +160,16 @@ class Interpreter:
         if isinstance(object_to_call, values.ClassDefinition):
             cls_instance = values.ClassInstance(object_to_call)
             return cls_instance
-        if not isinstance(object_to_call, values.Function):
+        if not isinstance(object_to_call, (values.Function, values.NativeFunction)):
             raise errors.JanRuntimeException(
                 f"Trying to call a function, but got {object_to_call}"
             )
         args = [self.execute(arg) for arg in call.args]
         kwargs = {k: self.execute(v) for k, v in call.kwargs.items()}
-        return object_to_call.call(self, args, kwargs)
+        if isinstance(object_to_call, values.NativeFunction):
+            return object_to_call.call(args, kwargs)
+        else:
+            return object_to_call.call(self, args, kwargs)
 
     def execute_integer(self, int_: ast.Integer) -> values.Integer:
         return values.Integer(int_.value)
@@ -258,7 +269,8 @@ class Interpreter:
     def setup_globals(self):
         closure = self.environment
         for name, native_fn in native_functions.FUNCTIONS.items():
-            fn = values.Function(name, [], [], native_fn, closure)
+            fn = values.NativeFunction(name, native_fn)
+            # fn = values.Function(name, [], [], native_fn, closure)
             self.environment.declare(name, "native_function")
             self.environment.assign(name, fn)
 

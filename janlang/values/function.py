@@ -1,29 +1,34 @@
 import environment
+import inspect
 import values
 import astree as ast
-from typing import Callable
+from typing import Any, Callable
+
+class NativeFunction(values.BaseValue):
+    
+    def __init__(self, name: str, fn) -> None:
+        super().__init__()
+        self.name = name
+        self.fn = fn
+
+    def call(self, args, kwargs):
+        return self.fn(*args, **kwargs)
 
 class Function(values.BaseValue):
 
     def __init__(self, name: str, parameters: list[ast.Parameter], defaults, body: ast.Block | Callable, closure):
-        import native_functions
         super().__init__()
         self.name = name
         self.parameters = parameters
         self.defaults = defaults
-        if not isinstance(body, ast.Block):
-            assert body in native_functions.INVERTED_FUNCTIONS
         self.body = body
         self.closure: environment.Environment = closure
-        self.is_native_function = body in native_functions.INVERTED_FUNCTIONS
 
     @classmethod
     def from_ast(cls, func_ast: ast.FunctionDefinition, closure):
         return cls(func_ast.name, func_ast.parameters, func_ast.defaults, func_ast.body, closure)
 
     def call(self, interpreter, args, kwargs):
-        if self.is_native_function:
-            return self.body(*args, **kwargs)
         env = self.closure.add_child()
         for arg, param in zip(args, self.parameters):
             env.declare(param.name, 'parameter')

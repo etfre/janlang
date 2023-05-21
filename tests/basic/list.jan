@@ -1,0 +1,6 @@
+var l = [1,2,3]
+l.push(4)
+l.push(5)
+l.pop()
+assert l[-1] == 4
+print(l[-1])

@@ -27,6 +27,7 @@ def main():
                 tokenizer = lexer.RuleLexer.from_path(path)
                 tokens = list(tokenizer.tokenize())
                 program = parser.Parser(tokens).parse_root()
+                # print(ast_json.dumps(program))
                 interpreter.Interpreter().execute(program)
             except Exception as e:
                 failed.append((path, e))

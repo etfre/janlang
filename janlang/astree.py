@@ -171,7 +171,7 @@ class Dictionary(Expr):
 
 
 class Attribute(Expr):
-    def __init__(self, attribute_of: Expr, name: Expr):
+    def __init__(self, attribute_of: Expr, name: str):
         self.attribute_of = attribute_of
         self.name = name
 

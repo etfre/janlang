@@ -1,6 +1,8 @@
 from __future__ import annotations
+import types
 from typing import Any
 import operator
+import inspect
 
 
 def create_type_maps():
@@ -26,8 +28,6 @@ class NoProxy:
     pass
 
 
-x = NoProxy
-
 
 class BaseValue:
     def __init__(self, proxy: Any = NoProxy) -> None:
@@ -38,6 +38,15 @@ class BaseValue:
                 map_python_to_jan_types, map_jan_to_python_types = create_type_maps()
                 assert map_python_to_jan_types[type(proxy)] is type(self)
         self.proxy = proxy
+        self.attributes = {}
+
+    def expose(self, *methods):
+        from values import Function, NativeFunction
+        for method in methods:
+            name = method.__name__
+            wrapped_method = NativeFunction(name, method)
+            self.attributes[name] = wrapped_method
+
 
     def __neg__(self):
         if not isinstance(self.proxy, NoProxy):
@@ -96,6 +105,14 @@ class BaseValue:
     def __iter__(self):
         if not isinstance(self.proxy, NoProxy):
             return iter(self.proxy)
+        raise NotImplementedError
+    
+    def getattr(self, name: str):
+        return self.attributes[name]
+        raise NotImplementedError
+    
+    def setattr(self, name: str, val):
+        # self.attributes
         raise NotImplementedError
 
 
